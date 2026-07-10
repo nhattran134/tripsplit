@@ -247,6 +247,21 @@ export function TripDashboardPage() {
         </div>
       </div>
 
+      {/* Games */}
+      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+        <h2 className="font-semibold mb-2">Games</h2>
+        <button
+          onClick={() => navigate(`/trip/${tripId}/games/gomoku`)}
+          className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors"
+        >
+          <span className="text-2xl">⚫⚪</span>
+          <div className="text-left">
+            <p className="font-medium text-sm">Gomoku</p>
+            <p className="text-xs text-slate-500">5-in-a-row • Play with your group</p>
+          </div>
+        </button>
+      </div>
+
       {/* Recent Activity */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
         <div className="flex items-center justify-between mb-3">

@@ -131,7 +131,7 @@ export function AddExpensePage() {
   }
 
   return (
-    <div className="space-y-4 pb-8 overflow-hidden">
+    <div className="space-y-4 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(`/trip/${tripId}`)} className="text-indigo-600 dark:text-indigo-400">←</button>
         <h1 className="text-xl font-bold">{t('expense.title')}</h1>

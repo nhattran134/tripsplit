@@ -1,10 +1,52 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
+import { useQuery } from '@tanstack/react-query'
 import { nanoid } from 'nanoid'
+import { Calendar, Users, Hash } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase'
 import { Avatar, AvatarPicker } from '@/components/common/Avatar'
+
+interface TripRef { id: string; name: string; invite_code: string; joined_at: string }
+
+interface TripSummary { currency: string; shortCode: string; archived: boolean; memberCount: number }
+
+function TripCard({ trip, summary, onClick }: { trip: TripRef; summary?: TripSummary; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors"
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-semibold text-lg">{trip.name}</p>
+        {summary?.archived && (
+          <span className="text-[10px] bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded font-medium">Done</span>
+        )}
+      </div>
+      <div className="flex items-center gap-3 text-xs text-slate-500">
+        {summary?.shortCode && (
+          <span className="flex items-center gap-1 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded font-mono">
+            <Hash size={10} />{summary.shortCode}
+          </span>
+        )}
+        {summary?.memberCount && (
+          <span className="flex items-center gap-1">
+            <Users size={10} />{summary.memberCount}
+          </span>
+        )}
+        {summary?.currency && (
+          <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">
+            {summary.currency}
+          </span>
+        )}
+        <span className="flex items-center gap-1 ml-auto">
+          <Calendar size={10} />{new Date(trip.joined_at).toLocaleDateString()}
+        </span>
+      </div>
+    </button>
+  )
+}
 
 function generateShortCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I confusion
@@ -19,6 +61,37 @@ export function HomePage() {
   const { t } = useTranslation()
   const { myTrips, addTrip } = useAppStore()
   const navigate = useNavigate()
+
+  // Batch fetch all trip summaries in ONE query (avoids N+1)
+  const tripIds = myTrips.map((t) => t.id)
+  const { data: tripSummaries = {} } = useQuery({
+    queryKey: ['trip-summaries', tripIds.join(',')],
+    enabled: tripIds.length > 0,
+    staleTime: 1000 * 60 * 10,
+    queryFn: async () => {
+      const { data: trips } = await supabase
+        .from('trips')
+        .select('id, base_currency, short_code, archived_at')
+        .in('id', tripIds)
+      const { data: members } = await supabase
+        .from('members')
+        .select('id, trip_id')
+        .in('trip_id', tripIds)
+        .is('deleted_at', null)
+
+      const summaries: Record<string, TripSummary> = {}
+      for (const t of trips || []) {
+        summaries[t.id] = {
+          currency: t.base_currency,
+          shortCode: t.short_code || '',
+          archived: !!t.archived_at,
+          memberCount: (members || []).filter((m) => m.trip_id === t.id).length,
+        }
+      }
+      return summaries
+    },
+  })
+
   const [showCreate, setShowCreate] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [name, setName] = useState('')
@@ -233,22 +306,15 @@ export function HomePage() {
       ) : (
         <div className="space-y-3">
           {myTrips.map((trip) => (
-            <button
-              key={trip.id}
-              onClick={() => navigate(`/trip/${trip.id}`)}
-              className="w-full text-left p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors"
-            >
-              <p className="font-semibold">{trip.name}</p>
-              <p className="text-sm text-slate-500">Joined {new Date(trip.joined_at).toLocaleDateString()}</p>
-            </button>
+            <TripCard key={trip.id} trip={trip} summary={tripSummaries[trip.id]} onClick={() => navigate(`/trip/${trip.id}`)} />
           ))}
         </div>
       )}
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto overscroll-contain p-4 flex items-start justify-center pt-[10vh]">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 mb-[40vh]">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85dvh] overflow-y-auto">
             <h2 className="text-xl font-bold">{t('trip.create')}</h2>
 
             <div>
@@ -323,8 +389,8 @@ export function HomePage() {
 
       {/* Join by Code Modal */}
       {showJoin && (
-        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto overscroll-contain p-4 flex items-start justify-center pt-[10vh]">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[80vh] overflow-y-auto mb-[40vh]">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85dvh] overflow-y-auto">
             <h2 className="text-xl font-bold">{t('join.title')}{joinTrip ? `: ${joinTrip.name}` : ''}</h2>
 
             {/* Step 1: Enter code */}

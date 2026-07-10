@@ -14,6 +14,24 @@ html, body {
   -webkit-text-size-adjust: 100%;
 }
 
+/* iOS swipe-back gesture coherency */
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* Smooth page transitions for swipe-back */
+main {
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Prevent edge swipe from triggering horizontal scroll */
+body {
+  overscroll-behavior-x: none;
+}
+
 @supports (padding-top: env(safe-area-inset-top)) {
   .safe-area-top { padding-top: env(safe-area-inset-top); }
   .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
@@ -25,6 +43,11 @@ input, select, textarea {
   font-size: 16px;
   box-sizing: border-box;
   vertical-align: middle;
+}
+
+/* Use inset focus ring to prevent clipping on iOS */
+input:focus, select:focus, textarea:focus {
+  --tw-ring-inset: inset;
 }
 
 textarea {
@@ -89,9 +112,9 @@ main {
    ANIMATIONS & VISUAL EFFECTS
    ============================================ */
 
-/* Page transition - fade up */
+/* Page transition - subtle fade (doesn't fight iOS swipe-back) */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -125,9 +148,9 @@ main {
   50% { transform: translateY(-4px); }
 }
 
-/* Apply animations */
+/* Apply animations - fast and subtle */
 main > div {
-  animation: fadeUp 0.3s ease-out;
+  animation: fadeUp 0.2s ease-out;
 }
 
 /* Cards - staggered entrance */

@@ -28,7 +28,7 @@ export function BottomNav() {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(fullPath)}
+              onClick={() => navigate(fullPath, { replace: true })}
               className={`flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors active:scale-95 ${
                 isActive
                   ? 'text-indigo-600 dark:text-indigo-400'
