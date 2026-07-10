@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "TripSplit",
+    "newTrip": "+ New Trip",
+    "noTrips": "No trips yet",
+    "noTripsHint": "Create a trip or join one with a link"
+  },
+  "trip": {
+    "create": "New Trip",
+    "name": "Trip Name",
+    "namePlaceholder": "Bali 2026",
+    "yourName": "Your Name",
+    "baseCurrency": "Base Currency",
+    "creating": "Creating...",
+    "cancel": "Cancel"
+  },
+  "join": {
+    "title": "Join Trip",
+    "subtitle": "Enter your name to join this group",
+    "namePlaceholder": "What should the group call you?",
+    "pin": "Trip PIN",
+    "pinRequired": "This trip requires a PIN",
+    "joining": "Joining...",
+    "joinButton": "Join Trip"
+  },
+  "dashboard": {
+    "deposited": "Deposited",
+    "spent": "Spent",
+    "pool": "Pool",
+    "memberBalances": "Member Balances",
+    "inviteOthers": "Invite Others",
+    "copy": "Copy",
+    "recent": "Recent",
+    "seeAll": "See all",
+    "noTransactions": "No transactions yet",
+    "deposit": "Deposit"
+  },
+  "expense": {
+    "title": "Add Expense",
+    "amount": "Amount",
+    "currency": "Currency",
+    "rate": "Rate",
+    "category": "Category",
+    "description": "Description",
+    "descPlaceholder": "Dinner at...",
+    "date": "Date",
+    "paidBy": "Paid By",
+    "split": "Split",
+    "equal": "Equal",
+    "select": "Select",
+    "custom": "Custom",
+    "splitAmong": "Split Among",
+    "saving": "Saving...",
+    "addButton": "Add Expense",
+    "totalInBase": "Total in base"
+  },
+  "deposit": {
+    "title": "Add Deposit",
+    "who": "Who deposited?",
+    "amount": "Amount",
+    "note": "Note (optional)",
+    "notePlaceholder": "Bank transfer, cash...",
+    "saving": "Saving...",
+    "addButton": "Add Deposit"
+  },
+  "members": {
+    "title": "Members",
+    "deposited": "Deposited",
+    "theirShare": "Their Share"
+  },
+  "settle": {
+    "title": "Settle Up",
+    "allSettled": "All settled!",
+    "allSettledHint": "No outstanding balances",
+    "transfersNeeded": "{{count}} transfer needed to settle all debts:",
+    "transfersNeeded_other": "{{count}} transfers needed to settle all debts:",
+    "pays": "pays",
+    "markSettled": "Mark as Settled",
+    "marking": "Marking...",
+    "history": "Settlement History"
+  },
+  "history": {
+    "title": "History",
+    "all": "All",
+    "expenses": "Expenses",
+    "deposits": "Deposits",
+    "noTransactions": "No transactions yet"
+  },
+  "settings": {
+    "title": "Settings",
+    "tripName": "Trip Name",
+    "baseCurrency": "Base Currency",
+    "inviteLink": "Invite Link",
+    "language": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "expense": "Expense",
+    "deposit": "Deposit",
+    "members": "Members",
+    "settle": "Settle"
+  },
+  "common": {
+    "admin": "Admin",
+    "trips": "Trips",
+    "loading": "Loading...",
+    "notFound": "Trip not found",
+    "offline": "Offline",
+    "back": "Back"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "TripSplit",
+    "newTrip": "+ Tạo mới",
+    "noTrips": "Chưa có chuyến đi",
+    "noTripsHint": "Tạo chuyến đi hoặc tham gia qua link"
+  },
+  "trip": {
+    "create": "Chuyến đi mới",
+    "name": "Tên chuyến đi",
+    "namePlaceholder": "Bali 2026",
+    "yourName": "Tên của bạn",
+    "baseCurrency": "Đơn vị tiền tệ",
+    "creating": "Đang tạo...",
+    "cancel": "Hủy"
+  },
+  "join": {
+    "title": "Tham gia",
+    "subtitle": "Nhập tên để tham gia nhóm",
+    "namePlaceholder": "Mọi người gọi bạn là gì?",
+    "pin": "Mã PIN",
+    "pinRequired": "Chuyến đi này yêu cầu mã PIN",
+    "joining": "Đang tham gia...",
+    "joinButton": "Tham gia"
+  },
+  "dashboard": {
+    "deposited": "Đã góp",
+    "spent": "Đã chi",
+    "pool": "Quỹ",
+    "memberBalances": "Số dư thành viên",
+    "inviteOthers": "Mời thêm",
+    "copy": "Sao chép",
+    "recent": "Gần đây",
+    "seeAll": "Xem tất cả",
+    "noTransactions": "Chưa có giao dịch",
+    "deposit": "Nạp tiền"
+  },
+  "expense": {
+    "title": "Thêm chi tiêu",
+    "amount": "Số tiền",
+    "currency": "Tiền tệ",
+    "rate": "Tỷ giá",
+    "category": "Danh mục",
+    "description": "Mô tả",
+    "descPlaceholder": "Ăn tối tại...",
+    "date": "Ngày",
+    "paidBy": "Người trả",
+    "split": "Chia",
+    "equal": "Đều",
+    "select": "Chọn",
+    "custom": "Tùy chỉnh",
+    "splitAmong": "Chia cho",
+    "saving": "Đang lưu...",
+    "addButton": "Thêm chi tiêu",
+    "totalInBase": "Tổng quy đổi"
+  },
+  "deposit": {
+    "title": "Nạp tiền",
+    "who": "Ai nạp?",
+    "amount": "Số tiền",
+    "note": "Ghi chú (tùy chọn)",
+    "notePlaceholder": "Chuyển khoản, tiền mặt...",
+    "saving": "Đang lưu...",
+    "addButton": "Nạp tiền"
+  },
+  "members": {
+    "title": "Thành viên",
+    "deposited": "Đã góp",
+    "theirShare": "Phần của họ"
+  },
+  "settle": {
+    "title": "Thanh toán",
+    "allSettled": "Đã thanh toán hết!",
+    "allSettledHint": "Không còn nợ",
+    "transfersNeeded": "Cần {{count}} giao dịch để thanh toán:",
+    "transfersNeeded_other": "Cần {{count}} giao dịch để thanh toán:",
+    "pays": "trả cho",
+    "markSettled": "Đánh dấu đã trả",
+    "marking": "Đang xử lý...",
+    "history": "Lịch sử thanh toán"
+  },
+  "history": {
+    "title": "Lịch sử",
+    "all": "Tất cả",
+    "expenses": "Chi tiêu",
+    "deposits": "Nạp tiền",
+    "noTransactions": "Chưa có giao dịch"
+  },
+  "settings": {
+    "title": "Cài đặt",
+    "tripName": "Tên chuyến đi",
+    "baseCurrency": "Đơn vị tiền tệ",
+    "inviteLink": "Link mời",
+    "language": "Ngôn ngữ"
+  },
+  "nav": {
+    "dashboard": "Tổng quan",
+    "expense": "Chi tiêu",
+    "deposit": "Nạp",
+    "members": "Thành viên",
+    "settle": "Thanh toán"
+  },
+  "common": {
+    "admin": "Quản lý",
+    "trips": "Chuyến đi",
+    "loading": "Đang tải...",
+    "notFound": "Không tìm thấy",
+    "offline": "Ngoại tuyến",
+    "back": "Quay lại"
+  }
+}
