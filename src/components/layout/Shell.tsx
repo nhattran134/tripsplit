@@ -9,14 +9,14 @@ export function Shell() {
   const isHome = location.pathname === '/'
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pwa-top-padding">
       <OfflineBadge />
-      <main className="pb-20 px-4 pt-4 max-w-lg mx-auto">
+      <main className={`px-4 pt-6 max-w-lg mx-auto ${isTripRoute ? 'pb-safe' : 'pb-8'}`}>
         <Outlet />
       </main>
       {isTripRoute && <BottomNav />}
       {isHome && (
-        <div className="fixed bottom-4 right-4">
+        <div className="fixed bottom-6 right-4 safe-area-bottom">
           <LanguageToggle />
         </div>
       )}

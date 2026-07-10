@@ -1,1 +1,203 @@
 @import 'tailwindcss';
+
+/* iOS Safe Areas + Mobile Compatibility */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+html, body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  -webkit-text-size-adjust: 100%;
+}
+
+@supports (padding-top: env(safe-area-inset-top)) {
+  .safe-area-top { padding-top: env(safe-area-inset-top); }
+  .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+input, select, textarea { font-size: 16px; }
+
+.pb-safe {
+  padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+}
+
+@media all and (display-mode: standalone) {
+  .pwa-top-padding { padding-top: env(safe-area-inset-top, 20px); }
+}
+
+/* ============================================
+   ANIMATIONS & VISUAL EFFECTS
+   ============================================ */
+
+/* Page transition - fade up */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes bounce-subtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* Apply animations */
+main > div {
+  animation: fadeUp 0.3s ease-out;
+}
+
+/* Cards - staggered entrance */
+.space-y-3 > * {
+  animation: fadeUp 0.3s ease-out both;
+}
+.space-y-3 > *:nth-child(1) { animation-delay: 0ms; }
+.space-y-3 > *:nth-child(2) { animation-delay: 50ms; }
+.space-y-3 > *:nth-child(3) { animation-delay: 100ms; }
+.space-y-3 > *:nth-child(4) { animation-delay: 150ms; }
+.space-y-3 > *:nth-child(5) { animation-delay: 200ms; }
+.space-y-3 > *:nth-child(6) { animation-delay: 250ms; }
+
+/* Modal backdrop + content */
+.fixed.inset-0.bg-black\/50 {
+  animation: fadeIn 0.2s ease-out;
+}
+.fixed.inset-0.bg-black\/50 > div {
+  animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Cards - hover/press effects */
+.rounded-xl {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.rounded-xl:active {
+  transform: scale(0.98);
+}
+
+/* Buttons - press effect */
+button {
+  transition: transform 0.1s ease, opacity 0.1s ease, background-color 0.15s ease;
+}
+button:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+/* Summary cards - subtle gradient borders */
+.grid.grid-cols-3 > div {
+  position: relative;
+  overflow: hidden;
+}
+.grid.grid-cols-3 > div::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0.3;
+}
+
+/* Member avatar - subtle shadow */
+.rounded-full {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Balance numbers - glow effect */
+.text-green-600 {
+  text-shadow: 0 0 12px rgba(22, 163, 74, 0.2);
+}
+.text-red-600 {
+  text-shadow: 0 0 12px rgba(220, 38, 38, 0.2);
+}
+
+/* Bottom nav - glass morphism */
+nav.fixed.bottom-0 {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Trip code - pulse on display */
+.tracking-widest.text-2xl {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Empty state emoji */
+.text-4xl {
+  animation: bounce-subtle 2s ease-in-out infinite;
+}
+
+/* Offline badge - slide down */
+.fixed.top-0.bg-amber-500 {
+  animation: fadeUp 0.3s ease-out;
+}
+
+/* Loading shimmer for skeleton states */
+.animate-shimmer {
+  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Smooth number transitions */
+.font-bold, .font-semibold {
+  transition: color 0.3s ease;
+}
+
+/* Category grid - pop on select */
+.grid.grid-cols-4 button {
+  transition: transform 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+}
+.grid.grid-cols-4 button:active {
+  transform: scale(0.9);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 2px;
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .text-green-600 { text-shadow: 0 0 16px rgba(34, 197, 94, 0.3); }
+  .text-red-600 { text-shadow: 0 0 16px rgba(248, 113, 113, 0.3); }
+  
+  .rounded-full {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+}

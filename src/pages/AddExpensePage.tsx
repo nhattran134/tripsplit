@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
 import { calculateEqualSplit, validateCustomSplit } from '@/lib/splits'
-import { formatCurrency, COMMON_CURRENCIES } from '@/lib/currency'
+import { formatCurrency, COMMON_CURRENCIES, fetchRate } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import type { Member } from '@/types'
 
@@ -22,10 +23,12 @@ export function AddExpensePage() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
 
   const [amount, setAmount] = useState('')
   const [currency, setCurrency] = useState('')
   const [rateToBase, setRateToBase] = useState('1')
+  const [fetchingRate, setFetchingRate] = useState(false)
   const [category, setCategory] = useState('food')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -62,7 +65,10 @@ export function AddExpensePage() {
       const numAmount = parseFloat(amount)
       if (!numAmount || numAmount <= 0) throw new Error('Enter a valid amount')
       if (!paidBy) throw new Error('Select who paid')
-      if (selectedMembers.length === 0) throw new Error('Select at least one member to split with')
+
+      // For equal split, always use all members; for specific/custom, use selection
+      const splitMembers = splitType === 'equal' ? members.map((m) => m.id) : selectedMembers
+      if (splitMembers.length === 0) throw new Error('Select at least one member to split with')
 
       const numRate = parseFloat(rateToBase) || 1
       const baseAmount = numAmount * numRate
@@ -70,7 +76,7 @@ export function AddExpensePage() {
 
       let splits: { member_id: string; share_amount: number }[]
       if (splitType === 'equal' || splitType === 'specific') {
-        splits = calculateEqualSplit(baseAmount, selectedMembers, baseCurrency)
+        splits = calculateEqualSplit(baseAmount, splitMembers, baseCurrency)
       } else {
         const parsed: Record<string, number> = {}
         for (const id of selectedMembers) {
@@ -128,13 +134,13 @@ export function AddExpensePage() {
     <div className="space-y-4 pb-8">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(`/trip/${tripId}`)} className="text-indigo-600 dark:text-indigo-400">←</button>
-        <h1 className="text-xl font-bold">Add Expense</h1>
+        <h1 className="text-xl font-bold">{t('expense.title')}</h1>
       </div>
 
       {/* Amount + Currency */}
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Amount</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.amount')}</label>
           <input
             type="number"
             inputMode="decimal"
@@ -146,10 +152,22 @@ export function AddExpensePage() {
           />
         </div>
         <div className="w-24">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Currency</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.currency')}</label>
           <select
             value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
+            onChange={async (e) => {
+              const newCurrency = e.target.value
+              setCurrency(newCurrency)
+              const baseCurr = trip?.base_currency || 'VND'
+              if (newCurrency !== baseCurr) {
+                setFetchingRate(true)
+                const rate = await fetchRate(newCurrency, baseCurr)
+                if (rate) setRateToBase(rate.toString())
+                setFetchingRate(false)
+              } else {
+                setRateToBase('1')
+              }
+            }}
             className="mt-1 w-full px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
           >
             {COMMON_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
@@ -162,13 +180,16 @@ export function AddExpensePage() {
         <div>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
             Rate (1 {currency} = ? {baseCurrency})
+            {fetchingRate && <span className="ml-2 text-xs text-indigo-500 animate-pulse">fetching...</span>}
           </label>
           <input
             type="number"
             inputMode="decimal"
             value={rateToBase}
             onChange={(e) => setRateToBase(e.target.value)}
-            className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
+            className={`mt-1 w-full px-3 py-2 rounded-lg border bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none transition-colors ${
+              fetchingRate ? 'border-indigo-300 bg-indigo-50/50' : 'border-slate-300 dark:border-slate-600'
+            }`}
           />
           {amount && <p className="text-xs text-slate-500 mt-1">= {formatCurrency(parseFloat(amount) * parseFloat(rateToBase || '1'), baseCurrency)}</p>}
         </div>
@@ -176,7 +197,7 @@ export function AddExpensePage() {
 
       {/* Category */}
       <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Category</label>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.category')}</label>
         <div className="mt-1 grid grid-cols-4 gap-2">
           {CATEGORIES.map((cat) => (
             <button
@@ -198,17 +219,17 @@ export function AddExpensePage() {
       {/* Description + Date */}
       <div className="flex gap-2">
         <div className="flex-1">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Description</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.description')}</label>
           <input
             type="text"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Dinner at..."
+            placeholder={t('expense.descPlaceholder')}
             className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
           />
         </div>
         <div className="w-36">
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Date</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.date')}</label>
           <input
             type="date"
             value={date}
@@ -220,7 +241,7 @@ export function AddExpensePage() {
 
       {/* Paid By */}
       <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Paid By</label>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.paidBy')}</label>
         <div className="mt-1 flex flex-wrap gap-2">
           {members.map((m) => (
             <button
@@ -240,7 +261,7 @@ export function AddExpensePage() {
 
       {/* Split Type */}
       <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Split</label>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.split')}</label>
         <div className="mt-1 flex gap-2">
           {(['equal', 'specific', 'custom'] as const).map((type) => (
             <button
@@ -252,7 +273,7 @@ export function AddExpensePage() {
                   : 'border-slate-200 dark:border-slate-700'
               }`}
             >
-              {type === 'equal' ? 'Equal' : type === 'specific' ? 'Select' : 'Custom'}
+              {type === 'equal' ? t('expense.equal') : type === 'specific' ? t('expense.select') : t('expense.custom')}
             </button>
           ))}
         </div>
@@ -261,7 +282,7 @@ export function AddExpensePage() {
       {/* Member Selection (for specific/custom) */}
       {(splitType === 'specific' || splitType === 'custom') && (
         <div>
-          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Split Among</label>
+          <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.splitAmong')}</label>
           <div className="mt-1 space-y-2">
             {members.map((m) => (
               <div key={m.id} className="flex items-center gap-2">
@@ -291,7 +312,7 @@ export function AddExpensePage() {
           </div>
           {splitType === 'custom' && amount && (
             <p className="text-xs text-slate-500 mt-2">
-              Total in base: {formatCurrency(parseFloat(amount) * parseFloat(rateToBase || '1'), baseCurrency)}
+              {t('expense.totalInBase')}: {formatCurrency(parseFloat(amount) * parseFloat(rateToBase || '1'), baseCurrency)}
             </p>
           )}
         </div>
@@ -304,7 +325,7 @@ export function AddExpensePage() {
         disabled={mutation.isPending}
         className="w-full py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
       >
-        {mutation.isPending ? 'Saving...' : 'Add Expense'}
+        {mutation.isPending ? t('expense.saving') : t('expense.addButton')}
       </button>
     </div>
   )

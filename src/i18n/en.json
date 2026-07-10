@@ -21,7 +21,12 @@
     "pin": "Trip PIN",
     "pinRequired": "This trip requires a PIN",
     "joining": "Joining...",
-    "joinButton": "Join Trip"
+    "joinButton": "Join Trip",
+    "pickOrCreate": "Pick your name or create a new one",
+    "claimSpot": "Tap join to claim your spot",
+    "iAm": "I am...",
+    "someoneElse": "Someone else (new member)",
+    "notFound": "Trip not found. Check the link and try again."
   },
   "dashboard": {
     "deposited": "Deposited",
@@ -33,7 +38,9 @@
     "recent": "Recent",
     "seeAll": "See all",
     "noTransactions": "No transactions yet",
-    "deposit": "Deposit"
+    "deposit": "Deposit",
+    "tripCode": "Trip Code",
+    "tapToCopy": "Tap to copy"
   },
   "expense": {
     "title": "Add Expense",
@@ -66,7 +73,16 @@
   "members": {
     "title": "Members",
     "deposited": "Deposited",
-    "theirShare": "Their Share"
+    "theirShare": "Their Share",
+    "add": "+ Add",
+    "cancel": "Cancel",
+    "adding": "Adding...",
+    "remove": "Remove",
+    "makeAdmin": "↑ Make Admin",
+    "removeAdmin": "↓ Remove Admin",
+    "unclaimed": "Unclaimed",
+    "addHint": "Add a member (they can claim their account later via invite link)",
+    "copyLink": "📋 Copy personal invite link"
   },
   "settle": {
     "title": "Settle Up",
@@ -74,6 +90,7 @@
     "allSettledHint": "No outstanding balances",
     "transfersNeeded": "{{count}} transfer needed to settle all debts:",
     "transfersNeeded_other": "{{count}} transfers needed to settle all debts:",
+    "transfers": "{{count}} transfer needed to settle all debts:",
     "pays": "pays",
     "markSettled": "Mark as Settled",
     "marking": "Marking...",
@@ -84,6 +101,7 @@
     "all": "All",
     "expenses": "Expenses",
     "deposits": "Deposits",
+    "settlements": "🤝 Settlements",
     "noTransactions": "No transactions yet"
   },
   "settings": {
@@ -106,6 +124,8 @@
     "loading": "Loading...",
     "notFound": "Trip not found",
     "offline": "Offline",
-    "back": "Back"
+    "back": "Back",
+    "undo": "Undo",
+    "confirm": "Are you sure?"
   }
 }

@@ -27,11 +27,27 @@ export function formatCurrency(amount: number, currency: string): string {
 /**
  * Fetch exchange rate.
  * rate_to_base means: 1 unit of fromCurrency = X units of baseCurrency
+ * Uses frankfurter.app (free, no API key, CORS-friendly, ECB data).
  */
 export async function fetchRate(fromCurrency: string, baseCurrency: string): Promise<number | null> {
   if (fromCurrency === baseCurrency) return 1
 
   try {
+    const response = await fetch(
+      `https://api.frankfurter.app/latest?from=${fromCurrency}&to=${baseCurrency}`
+    )
+    if (response.ok) {
+      const data = await response.json()
+      if (data?.rates?.[baseCurrency]) {
+        return data.rates[baseCurrency]
+      }
+    }
+  } catch {
+    // Fallback silently
+  }
+
+  try {
+    // Fallback: exchangerate.host
     const response = await fetch(
       `https://api.exchangerate.host/convert?from=${fromCurrency}&to=${baseCurrency}&amount=1`
     )
@@ -39,10 +55,22 @@ export async function fetchRate(fromCurrency: string, baseCurrency: string): Pro
     if (data.success && data.result) {
       return data.result
     }
-    return null
   } catch {
-    return null
+    // Both failed
   }
+
+  return null
+}
+
+/**
+ * Format amount without currency symbol (for displaying in base currency context)
+ */
+export function formatAmount(amount: number, currency: string): string {
+  const decimals = getCurrencyDecimals(currency)
+  return new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount)
 }
 
 export const COMMON_CURRENCIES = [

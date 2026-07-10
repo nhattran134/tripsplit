@@ -1,18 +1,92 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { nanoid } from 'nanoid'
 import { useAppStore } from '@/lib/store'
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase'
 
+function generateShortCode(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I confusion
+  let code = ''
+  for (let i = 0; i < 6; i++) {
+    code += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return code
+}
+
 export function HomePage() {
+  const { t } = useTranslation()
   const { myTrips, addTrip } = useAppStore()
   const navigate = useNavigate()
   const [showCreate, setShowCreate] = useState(false)
+  const [showJoin, setShowJoin] = useState(false)
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('VND')
   const [memberName, setMemberName] = useState('')
+  const [joinCode, setJoinCode] = useState('')
+  const [joinName, setJoinName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const handleJoinByCode = async () => {
+    if (!joinCode.trim() || !joinName.trim()) {
+      setError('Trip code and your name are required')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const authUid = await ensureAnonymousAuth()
+
+      // Find trip by short code (case insensitive)
+      const { data: trip, error: tripError } = await supabase
+        .from('trips')
+        .select('id, name, invite_code, short_code')
+        .ilike('short_code', joinCode.trim().toUpperCase())
+        .is('archived_at', null)
+        .single()
+
+      if (tripError || !trip) {
+        setError('Trip not found. Check the code and try again.')
+        setLoading(false)
+        return
+      }
+
+      // Check if already a member
+      const { data: existing } = await supabase
+        .from('members')
+        .select('id')
+        .eq('trip_id', trip.id)
+        .eq('auth_uid', authUid)
+        .is('deleted_at', null)
+        .single()
+
+      if (!existing) {
+        const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6']
+        const color = colors[Math.floor(Math.random() * colors.length)]
+
+        const { error: memberError } = await supabase
+          .from('members')
+          .insert({ trip_id: trip.id, auth_uid: authUid, name: joinName.trim(), color })
+
+        if (memberError) {
+          if (memberError.message.includes('idx_members_unique_name_per_trip') || memberError.message.includes('duplicate')) {
+            throw new Error('This name is already taken. Please choose a different name.')
+          }
+          throw new Error(memberError.message)
+        }
+      }
+
+      addTrip({ id: trip.id, name: trip.name, invite_code: trip.invite_code, joined_at: new Date().toISOString() })
+      navigate(`/trip/${trip.id}`)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to join trip')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleCreate = async () => {
     if (!name.trim() || !memberName.trim()) {
@@ -26,11 +100,12 @@ export function HomePage() {
     try {
       const authUid = await ensureAnonymousAuth()
       const inviteCode = nanoid(21)
+      const shortCode = generateShortCode()
 
       // Create trip
       const { data: trip, error: tripError } = await supabase
         .from('trips')
-        .insert({ name: name.trim(), base_currency: currency, invite_code: inviteCode })
+        .insert({ name: name.trim(), base_currency: currency, invite_code: inviteCode, short_code: shortCode })
         .select()
         .single()
 
@@ -59,20 +134,28 @@ export function HomePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">TripSplit</h1>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
-        >
-          + New Trip
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowJoin(true)}
+            className="border border-indigo-600 text-indigo-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+          >
+            Join
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+          >
+            + New
+          </button>
+        </div>
       </div>
 
       {/* Trip List */}
       {myTrips.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
           <p className="text-4xl mb-4">✈️</p>
-          <p className="font-medium">No trips yet</p>
-          <p className="text-sm">Create a trip or join one with a link</p>
+          <p className="font-medium">{t('app.noTrips')}</p>
+          <p className="text-sm">{t('app.noTripsHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -93,10 +176,10 @@ export function HomePage() {
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4">
-            <h2 className="text-xl font-bold">New Trip</h2>
+            <h2 className="text-xl font-bold">{t('trip.create')}</h2>
 
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Trip Name</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.name')}</label>
               <input
                 type="text"
                 value={name}
@@ -107,7 +190,7 @@ export function HomePage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Your Name</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.yourName')}</label>
               <input
                 type="text"
                 value={memberName}
@@ -118,7 +201,7 @@ export function HomePage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Base Currency</label>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.baseCurrency')}</label>
               <select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
@@ -149,6 +232,57 @@ export function HomePage() {
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
                 {loading ? 'Creating...' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join by Code Modal */}
+      {showJoin && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4">
+            <h2 className="text-xl font-bold">{t('join.title')}</h2>
+
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Trip Code</label>
+              <input
+                type="text"
+                value={joinCode}
+                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="e.g. ABC123"
+                maxLength={6}
+                className="mt-1 w-full px-3 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-center text-2xl font-mono tracking-widest uppercase"
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.yourName')}</label>
+              <input
+                type="text"
+                value={joinName}
+                onChange={(e) => setJoinName(e.target.value)}
+                placeholder="What should the group call you?"
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
+              />
+            </div>
+
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowJoin(false); setError('') }}
+                className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleJoinByCode}
+                disabled={loading}
+                className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+              >
+                {loading ? 'Joining...' : 'Join'}
               </button>
             </div>
           </div>

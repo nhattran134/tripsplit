@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
 import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
@@ -11,6 +12,7 @@ export function SettleUpPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [settlingIndex, setSettlingIndex] = useState<number | null>(null)
 
   const { data: trip } = useQuery({
@@ -78,6 +80,9 @@ export function SettleUpPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
       setSettlingIndex(null)
     },
   })
@@ -90,19 +95,19 @@ export function SettleUpPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(`/trip/${tripId}`)} className="text-indigo-600 dark:text-indigo-400">←</button>
-        <h1 className="text-xl font-bold">Settle Up</h1>
+        <h1 className="text-xl font-bold">{t('settle.title')}</h1>
       </div>
 
       {transfers.length === 0 ? (
         <div className="text-center py-12">
           <p className="text-4xl mb-4">✅</p>
-          <p className="font-semibold text-green-600">All settled!</p>
-          <p className="text-sm text-slate-500 mt-1">No outstanding balances</p>
+          <p className="font-semibold text-green-600">{t('settle.allSettled')}</p>
+          <p className="text-sm text-slate-500 mt-1">{t('settle.allSettledHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
           <p className="text-sm text-slate-500">
-            {transfers.length} transfer{transfers.length > 1 ? 's' : ''} needed to settle all debts:
+            {t('settle.transfers', { count: transfers.length })}
           </p>
           {transfers.map((transfer, index) => (
             <div
@@ -128,7 +133,7 @@ export function SettleUpPage() {
                 <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
               </div>
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                <span className="font-medium">{transfer.from.name}</span> pays <span className="font-medium">{transfer.to.name}</span>
+                <span className="font-medium">{transfer.from.name}</span> {t('settle.pays')} <span className="font-medium">{transfer.to.name}</span>
               </p>
               <button
                 onClick={() => {
@@ -138,7 +143,7 @@ export function SettleUpPage() {
                 disabled={settleMutation.isPending && settlingIndex === index}
                 className="mt-3 w-full py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 transition-colors"
               >
-                {settleMutation.isPending && settlingIndex === index ? 'Marking...' : 'Mark as Settled'}
+                {settleMutation.isPending && settlingIndex === index ? t('settle.marking') : t('settle.markSettled')}
               </button>
             </div>
           ))}
@@ -148,7 +153,7 @@ export function SettleUpPage() {
       {/* Settlement History */}
       {settlements.length > 0 && (
         <div className="mt-6">
-          <h2 className="font-semibold mb-2 text-slate-600 dark:text-slate-300">Settlement History</h2>
+          <h2 className="font-semibold mb-2 text-slate-600 dark:text-slate-300">{t('settle.history')}</h2>
           <div className="space-y-2">
             {settlements.map((s) => {
               const from = members.find((m) => m.id === s.from_member_id)

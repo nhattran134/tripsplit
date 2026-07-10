@@ -21,7 +21,12 @@
     "pin": "Mã PIN",
     "pinRequired": "Chuyến đi này yêu cầu mã PIN",
     "joining": "Đang tham gia...",
-    "joinButton": "Tham gia"
+    "joinButton": "Tham gia",
+    "pickOrCreate": "Chọn tên hoặc tạo mới",
+    "claimSpot": "Nhấn tham gia để nhận chỗ",
+    "iAm": "Tôi là...",
+    "someoneElse": "Người khác (thành viên mới)",
+    "notFound": "Không tìm thấy chuyến đi. Kiểm tra link và thử lại."
   },
   "dashboard": {
     "deposited": "Đã góp",
@@ -33,7 +38,9 @@
     "recent": "Gần đây",
     "seeAll": "Xem tất cả",
     "noTransactions": "Chưa có giao dịch",
-    "deposit": "Nạp tiền"
+    "deposit": "Nạp tiền",
+    "tripCode": "Mã chuyến đi",
+    "tapToCopy": "Nhấn để sao chép"
   },
   "expense": {
     "title": "Thêm chi tiêu",
@@ -66,7 +73,16 @@
   "members": {
     "title": "Thành viên",
     "deposited": "Đã góp",
-    "theirShare": "Phần của họ"
+    "theirShare": "Phần của họ",
+    "add": "+ Thêm",
+    "cancel": "Hủy",
+    "adding": "Đang thêm...",
+    "remove": "Xóa",
+    "makeAdmin": "↑ Làm quản lý",
+    "removeAdmin": "↓ Bỏ quản lý",
+    "unclaimed": "Chưa nhận",
+    "addHint": "Thêm thành viên (họ có thể nhận tài khoản sau qua link mời)",
+    "copyLink": "📋 Sao chép link mời cá nhân"
   },
   "settle": {
     "title": "Thanh toán",
@@ -74,6 +90,7 @@
     "allSettledHint": "Không còn nợ",
     "transfersNeeded": "Cần {{count}} giao dịch để thanh toán:",
     "transfersNeeded_other": "Cần {{count}} giao dịch để thanh toán:",
+    "transfers": "Cần {{count}} giao dịch để thanh toán:",
     "pays": "trả cho",
     "markSettled": "Đánh dấu đã trả",
     "marking": "Đang xử lý...",
@@ -84,6 +101,7 @@
     "all": "Tất cả",
     "expenses": "Chi tiêu",
     "deposits": "Nạp tiền",
+    "settlements": "🤝 Thanh toán",
     "noTransactions": "Chưa có giao dịch"
   },
   "settings": {
@@ -106,6 +124,8 @@
     "loading": "Đang tải...",
     "notFound": "Không tìm thấy",
     "offline": "Ngoại tuyến",
-    "back": "Quay lại"
+    "back": "Quay lại",
+    "undo": "Hoàn tác",
+    "confirm": "Bạn chắc chắn?"
   }
 }

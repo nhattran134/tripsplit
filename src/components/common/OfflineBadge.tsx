@@ -21,7 +21,10 @@ export function OfflineBadge() {
   if (isOnline) return null
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-1 text-xs font-medium z-50">
+    <div
+      className="fixed top-0 left-0 right-0 bg-amber-500 text-white text-center py-1 text-xs font-medium z-50"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+    >
       📡 {t('common.offline')}
     </div>
   )

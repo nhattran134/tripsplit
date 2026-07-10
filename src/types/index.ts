@@ -16,6 +16,7 @@ export interface Member {
   name: string
   color: string
   is_admin: boolean
+  claimed: boolean
   joined_at: string
   deleted_at: string | null
 }
