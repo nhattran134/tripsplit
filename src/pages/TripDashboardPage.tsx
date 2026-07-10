@@ -6,11 +6,34 @@ import { ArrowLeft, Settings, Receipt, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Avatar } from '@/components/common/Avatar'
 import { useAppStore } from '@/lib/store'
-import { useMyMemberIds } from '@/hooks/useMyMember'
 import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency, formatAmount } from '@/lib/currency'
 import { useCopy } from '@/hooks/useCopy'
 import type { Member, Deposit, Expense, ExpenseSplit, Settlement } from '@/types'
+
+function ChallengeNotification({ tripId, currentAuthUid, members }: { tripId: string; currentAuthUid: string | undefined; members: Member[] }) {
+  const myMember = members.find(m => m.auth_uid === currentAuthUid)
+  const { data: count = 0 } = useQuery({
+    queryKey: ['challenge-count', tripId, myMember?.id],
+    enabled: !!myMember,
+    refetchInterval: 5000,
+    queryFn: async () => {
+      const { data } = await supabase.from('gomoku_challenges')
+        .select('id')
+        .eq('trip_id', tripId)
+        .eq('to_member_id', myMember!.id)
+        .eq('status', 'pending')
+      return data?.length || 0
+    },
+  })
+
+  if (!count) return null
+  return (
+    <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-bounce">
+      {count}
+    </span>
+  )
+}
 
 export function TripDashboardPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -110,7 +133,14 @@ export function TripDashboardPage() {
   })
 
   // Current user identification
-  const { myMemberIds } = useMyMemberIds(tripId)
+  const { data: currentSession } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession()
+      return data.session
+    },
+  })
+  const currentAuthUid = currentSession?.user?.id
 
   const totalDeposits = useMemo(
     () => deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0),
@@ -186,7 +216,7 @@ export function TripDashboardPage() {
                 <div className="flex items-center gap-2">
                   <Avatar name={member.name} style={member.avatar_style} seed={member.avatar_seed} size={32} />
                   <span className="font-medium text-sm">{member.name}</span>
-                  {myMemberIds.includes(member.id) && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
+                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
                 </div>
                 <span className={`text-sm font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -252,13 +282,14 @@ export function TripDashboardPage() {
         <h2 className="font-semibold mb-2">Games</h2>
         <button
           onClick={() => navigate(`/trip/${tripId}/games/gomoku`)}
-          className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors"
+          className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors relative"
         >
           <span className="text-2xl">⚫⚪</span>
-          <div className="text-left">
+          <div className="text-left flex-1">
             <p className="font-medium text-sm">Gomoku</p>
             <p className="text-xs text-slate-500">5-in-a-row • Play with your group</p>
           </div>
+          <ChallengeNotification tripId={tripId!} currentAuthUid={currentAuthUid} members={members} />
         </button>
       </div>
 
