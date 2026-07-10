@@ -7,7 +7,7 @@ import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { Avatar } from '@/components/common/Avatar'
-import type { Member, Deposit, ExpenseSplit, Settlement } from '@/types'
+import type { Member, Deposit, Expense, ExpenseSplit, Settlement } from '@/types'
 
 export function SettleUpPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -40,6 +40,15 @@ export function SettleUpPage() {
       const { data, error } = await supabase.from('deposits').select('*').eq('trip_id', tripId).is('deleted_at', null)
       if (error) throw error
       return data as Deposit[]
+    },
+  })
+
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('expenses').select('*').eq('trip_id', tripId).is('deleted_at', null)
+      if (error) throw error
+      return data as Expense[]
     },
   })
 
@@ -89,8 +98,8 @@ export function SettleUpPage() {
   })
 
   const balances = useMemo(
-    () => calculateBalances(members, deposits, expenseSplits, settlements),
-    [members, deposits, expenseSplits, settlements]
+    () => calculateBalances(members, deposits, expenses, expenseSplits, settlements),
+    [members, deposits, expenses, expenseSplits, settlements]
   )
   const transfers = useMemo(
     () => simplifyDebts(balances, members),

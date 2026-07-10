@@ -16,14 +16,14 @@ const makeDeposit = (memberId: string, amount: number, rate = 1): Deposit => ({
 describe('calculateBalances', () => {
   it('returns zero balances when no transactions', () => {
     const members = [makeMember('a', 'Alice'), makeMember('b', 'Bob')]
-    const result = calculateBalances(members, [], [], [])
+    const result = calculateBalances(members, [], [], [], [])
     expect(result.every((e) => e.net === 0)).toBe(true)
   })
 
   it('handles deposits only', () => {
     const members = [makeMember('a', 'Alice'), makeMember('b', 'Bob')]
     const deposits = [makeDeposit('a', 100), makeDeposit('b', 50)]
-    const result = calculateBalances(members, deposits, [], [])
+    const result = calculateBalances(members, deposits, [], [], [])
     expect(result.find((e) => e.memberId === 'a')?.net).toBe(100)
     expect(result.find((e) => e.memberId === 'b')?.net).toBe(50)
   })
@@ -35,7 +35,7 @@ describe('calculateBalances', () => {
       { id: 's1', expense_id: 'e1', member_id: 'a', share_amount: 60 },
       { id: 's2', expense_id: 'e1', member_id: 'b', share_amount: 60 },
     ]
-    const result = calculateBalances(members, deposits, splits, [])
+    const result = calculateBalances(members, deposits, [], splits, [])
     expect(result.find((e) => e.memberId === 'a')?.net).toBe(40)
     expect(result.find((e) => e.memberId === 'b')?.net).toBe(40)
   })
@@ -50,7 +50,7 @@ describe('calculateBalances', () => {
       { id: 's2', expense_id: 'e1', member_id: 'b', share_amount: 33.33 },
       { id: 's3', expense_id: 'e1', member_id: 'c', share_amount: 33.34 },
     ]
-    const result = calculateBalances(members, deposits, splits, [])
+    const result = calculateBalances(members, deposits, [], splits, [])
     // Sum should be close to zero (structural: 100 - 100 = 0, with possible rounding residual)
     const sum = result.reduce((s, e) => s + e.net, 0)
     expect(Math.abs(sum)).toBeLessThan(0.01)
@@ -60,7 +60,7 @@ describe('calculateBalances', () => {
     const members = [makeMember('a', 'A'), makeMember('b', 'B')]
     const deposits = [makeDeposit('a', 100), makeDeposit('b', 50)]
     // No expenses - pool has money, sum should be 150
-    const result = calculateBalances(members, deposits, [], [])
+    const result = calculateBalances(members, deposits, [], [], [])
     const sum = result.reduce((s, e) => s + e.net, 0)
     expect(sum).toBe(150)
   })
@@ -68,7 +68,7 @@ describe('calculateBalances', () => {
   it('excludes soft-deleted deposits', () => {
     const members = [makeMember('a', 'Alice')]
     const deposits: Deposit[] = [{ ...makeDeposit('a', 100), deleted_at: '2026-01-02' }]
-    const result = calculateBalances(members, deposits, [], [])
+    const result = calculateBalances(members, deposits, [], [], [])
     expect(result[0].net).toBe(0)
   })
 
@@ -83,7 +83,7 @@ describe('calculateBalances', () => {
       id: 'set1', trip_id: 'trip1', from_member_id: 'b', to_member_id: 'a',
       amount: 30, note: '', created_at: '2026-01-02', deleted_at: null,
     }]
-    const result = calculateBalances(members, deposits, splits, settlements)
+    const result = calculateBalances(members, deposits, [], splits, settlements)
     expect(result.find((e) => e.memberId === 'a')?.net).toBe(20)
     expect(result.find((e) => e.memberId === 'b')?.net).toBe(-20)
   })

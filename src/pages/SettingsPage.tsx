@@ -205,7 +205,7 @@ export function SettingsPage() {
               <button
                 onClick={() => {
                   if (!trip) return
-                  const balances = calculateBalances(members, deposits, expenseSplits, settlements)
+                  const balances = calculateBalances(members, deposits, expenses, expenseSplits, settlements)
                   const transfers = simplifyDebts(balances, members)
                   exportCSV({ tripName: trip.name, baseCurrency: trip.base_currency, members, deposits, expenses, expenseSplits, settlements, balances, transfers })
                 }}
@@ -217,7 +217,7 @@ export function SettingsPage() {
               <button
                 onClick={() => {
                   if (!trip) return
-                  const balances = calculateBalances(members, deposits, expenseSplits, settlements)
+                  const balances = calculateBalances(members, deposits, expenses, expenseSplits, settlements)
                   const transfers = simplifyDebts(balances, members)
                   exportTextToClipboard({ tripName: trip.name, baseCurrency: trip.base_currency, members, deposits, expenses, expenseSplits, settlements, balances, transfers })
                   markCopied('text-export')

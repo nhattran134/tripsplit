@@ -112,14 +112,6 @@ export function TripDashboardPage() {
   // Current user identification
   const { myMemberIds } = useMyMemberIds(tripId)
 
-  if (tripLoading) {
-    return <div className="flex items-center justify-center py-12"><p className="text-slate-500">{t('common.loading')}</p></div>
-  }
-
-  if (!trip) {
-    return <div className="text-center py-12"><p className="text-red-500">{t('common.notFound')}</p></div>
-  }
-
   const totalDeposits = useMemo(
     () => deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0),
     [deposits]
@@ -130,9 +122,17 @@ export function TripDashboardPage() {
   )
   const poolBalance = totalDeposits - totalExpenses
   const balances = useMemo(
-    () => calculateBalances(members, deposits, expenseSplits, settlements),
-    [members, deposits, expenseSplits, settlements]
+    () => calculateBalances(members, deposits, expenses, expenseSplits, settlements),
+    [members, deposits, expenses, expenseSplits, settlements]
   )
+
+  if (tripLoading) {
+    return <div className="flex items-center justify-center py-12"><p className="text-slate-500">{t('common.loading')}</p></div>
+  }
+
+  if (!trip) {
+    return <div className="text-center py-12"><p className="text-red-500">{t('common.notFound')}</p></div>
+  }
 
   const inviteLink = `${window.location.origin}/t/${trip.invite_code}`
 

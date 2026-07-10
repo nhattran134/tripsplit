@@ -8,7 +8,7 @@ import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { useCopy } from '@/hooks/useCopy'
 import { Avatar, AvatarPicker } from '@/components/common/Avatar'
-import type { Member, Deposit, ExpenseSplit, Settlement } from '@/types'
+import type { Member, Deposit, Expense, ExpenseSplit, Settlement } from '@/types'
 
 export function MembersPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -48,6 +48,15 @@ export function MembersPage() {
     },
   })
 
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('expenses').select('*').eq('trip_id', tripId).is('deleted_at', null)
+      if (error) throw error
+      return data as Expense[]
+    },
+  })
+
   const { data: expenseSplits = [] } = useQuery({
     queryKey: ['expense_splits', tripId],
     queryFn: async () => {
@@ -72,7 +81,7 @@ export function MembersPage() {
     },
   })
 
-  const balances = calculateBalances(members, deposits, expenseSplits, settlements)
+  const balances = calculateBalances(members, deposits, expenses, expenseSplits, settlements)
   const baseCurrency = trip?.base_currency || 'VND'
 
   const memberStats = members.map((member) => {
