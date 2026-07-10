@@ -16,7 +16,7 @@ export function Shell() {
       </main>
       {isTripRoute && <BottomNav />}
       {isHome && (
-        <div className="fixed bottom-6 right-4 safe-area-bottom">
+        <div className="fixed bottom-6 right-4 safe-area-bottom z-10">
           <LanguageToggle />
         </div>
       )}

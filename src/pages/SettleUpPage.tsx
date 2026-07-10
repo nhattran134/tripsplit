@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -88,8 +88,14 @@ export function SettleUpPage() {
     },
   })
 
-  const balances = calculateBalances(members, deposits, expenseSplits, settlements)
-  const transfers = simplifyDebts(balances, members)
+  const balances = useMemo(
+    () => calculateBalances(members, deposits, expenseSplits, settlements),
+    [members, deposits, expenseSplits, settlements]
+  )
+  const transfers = useMemo(
+    () => simplifyDebts(balances, members),
+    [balances, members]
+  )
   const baseCurrency = trip?.base_currency || 'VND'
 
   return (
@@ -127,9 +133,9 @@ export function SettleUpPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <Avatar name={transfer.from.name} size={32} />
+                  <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={32} />
                   <span className="text-sm">→</span>
-                  <Avatar name={transfer.to.name} size={32} />
+                  <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={32} />
                 </div>
                 <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
               </div>

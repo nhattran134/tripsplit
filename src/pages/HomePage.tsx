@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { nanoid } from 'nanoid'
 import { useAppStore } from '@/lib/store'
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase'
-import { Avatar } from '@/components/common/Avatar'
+import { Avatar, AvatarPicker } from '@/components/common/Avatar'
 
 function generateShortCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' // no 0/O/1/I confusion
@@ -24,6 +24,8 @@ export function HomePage() {
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('VND')
   const [memberName, setMemberName] = useState('')
+  const [avatarStyle, setAvatarStyle] = useState('adventurer')
+  const [avatarSeed, setAvatarSeed] = useState(0)
   const [joinCode, setJoinCode] = useState('')
   const [joinName, setJoinName] = useState('')
   const [joinToken, setJoinToken] = useState('')
@@ -185,7 +187,7 @@ export function HomePage() {
       // Create first member (becomes admin via trigger)
       const { error: memberError } = await supabase
         .from('members')
-        .insert({ trip_id: trip.id, auth_uid: authUid, name: memberName.trim() })
+        .insert({ trip_id: trip.id, auth_uid: authUid, name: memberName.trim(), avatar_style: avatarStyle, avatar_seed: avatarSeed })
 
       if (memberError) throw new Error(memberError.message)
 
@@ -245,8 +247,8 @@ export function HomePage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4">
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto overscroll-contain p-4 flex items-start justify-center pt-[10vh]">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 mb-[40vh]">
             <h2 className="text-xl font-bold">{t('trip.create')}</h2>
 
             <div>
@@ -270,6 +272,16 @@ export function HomePage() {
                 className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
+
+            {/* Avatar picker */}
+            {memberName.trim() && (
+              <div>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Choose your avatar</label>
+                <div className="mt-2">
+                  <AvatarPicker name={memberName} selected={avatarStyle} seed={avatarSeed} onSelect={(style, seed) => { setAvatarStyle(style); setAvatarSeed(seed) }} />
+                </div>
+              </div>
+            )}
 
             <div>
               <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.baseCurrency')}</label>
@@ -311,8 +323,8 @@ export function HomePage() {
 
       {/* Join by Code Modal */}
       {showJoin && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 overflow-y-auto overscroll-contain p-4 flex items-start justify-center pt-[10vh]">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[80vh] overflow-y-auto mb-[40vh]">
             <h2 className="text-xl font-bold">{t('join.title')}{joinTrip ? `: ${joinTrip.name}` : ''}</h2>
 
             {/* Step 1: Enter code */}
@@ -369,7 +381,7 @@ export function HomePage() {
                               : 'border-slate-200 dark:border-slate-700'
                           }`}
                         >
-                          <Avatar name={m.name} size={32} className="shrink-0" />
+                          <Avatar name={m.name} style={m.avatar_style} seed={m.avatar_seed} size={32} className="shrink-0" />
                           <span className="font-medium text-sm">{m.name}</span>
                           {!m.claimed && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-auto">Unclaimed</span>}
                         </button>

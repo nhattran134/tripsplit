@@ -229,7 +229,7 @@ export function JoinTripPage() {
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
-                  <Avatar name={m.name} size={32} />
+                  <Avatar name={m.name} style={m.avatar_style} seed={m.avatar_seed} size={32} />
                   <span className="font-medium text-sm">{m.name}</span>
                   {!m.claimed && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-auto">Unclaimed</span>}
                 </button>

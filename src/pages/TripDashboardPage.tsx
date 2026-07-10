@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -120,10 +120,19 @@ export function TripDashboardPage() {
     return <div className="text-center py-12"><p className="text-red-500">{t('common.notFound')}</p></div>
   }
 
-  const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
-  const totalExpenses = expenses.reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
+  const totalDeposits = useMemo(
+    () => deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0),
+    [deposits]
+  )
+  const totalExpenses = useMemo(
+    () => expenses.reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0),
+    [expenses]
+  )
   const poolBalance = totalDeposits - totalExpenses
-  const balances = calculateBalances(members, deposits, expenseSplits, settlements)
+  const balances = useMemo(
+    () => calculateBalances(members, deposits, expenseSplits, settlements),
+    [members, deposits, expenseSplits, settlements]
+  )
 
   const inviteLink = `${window.location.origin}/t/${trip.invite_code}`
 
@@ -175,7 +184,7 @@ export function TripDashboardPage() {
             return (
               <div key={member.id} className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
-                  <Avatar name={member.name} size={32} />
+                  <Avatar name={member.name} style={member.avatar_style} seed={member.avatar_seed} size={32} />
                   <span className="font-medium text-sm">{member.name}</span>
                   {myMemberIds.includes(member.id) && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}

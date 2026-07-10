@@ -18,6 +18,8 @@ export interface Member {
   is_admin: boolean
   claimed: boolean
   member_token: string
+  avatar_style: string
+  avatar_seed: number
   joined_at: string
   deleted_at: string | null
 }

@@ -7,7 +7,7 @@ import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { useCopy } from '@/hooks/useCopy'
-import { Avatar } from '@/components/common/Avatar'
+import { Avatar, AvatarPicker } from '@/components/common/Avatar'
 import type { Member, Deposit, ExpenseSplit, Settlement } from '@/types'
 
 export function MembersPage() {
@@ -17,6 +17,7 @@ export function MembersPage() {
   const { t } = useTranslation()
   const { copy, copiedId } = useCopy()
   const [showAdd, setShowAdd] = useState(false)
+  const [editingAvatar, setEditingAvatar] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
   const [addError, setAddError] = useState('')
 
@@ -154,6 +155,20 @@ export function MembersPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['members', tripId] }),
   })
 
+  const updateAvatarMutation = useMutation({
+    mutationFn: async ({ memberId, style, seed }: { memberId: string; style: string; seed: number }) => {
+      const { error } = await supabase
+        .from('members')
+        .update({ avatar_style: style, avatar_seed: seed })
+        .eq('id', memberId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members', tripId] })
+      setEditingAvatar(null)
+    },
+  })
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -199,7 +214,15 @@ export function MembersPage() {
         {memberStats.map(({ member, totalDeposited, totalOwed, net }) => (
           <div key={member.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-3 mb-3">
-              <Avatar name={member.name} size={40} />
+              <button
+                onClick={() => member.auth_uid === currentAuthUid ? setEditingAvatar(editingAvatar === member.id ? null : member.id) : undefined}
+                className={member.auth_uid === currentAuthUid ? 'relative' : ''}
+              >
+                <Avatar name={member.name} style={member.avatar_style} seed={member.avatar_seed} size={40} />
+                {member.auth_uid === currentAuthUid && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-indigo-500 rounded-full flex items-center justify-center text-white text-[8px]">✎</span>
+                )}
+              </button>
               <div className="flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-semibold">{member.name}</p>
@@ -216,6 +239,20 @@ export function MembersPage() {
                 {net >= 0 ? '+' : ''}{formatCurrency(net, baseCurrency)}
               </span>
             </div>
+
+            {/* Avatar picker (for current user) */}
+            {editingAvatar === member.id && (
+              <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                <p className="text-xs font-medium text-slate-500 mb-2">Choose your avatar</p>
+                <AvatarPicker
+                  name={member.name}
+                  selected={member.avatar_style}
+                  seed={member.avatar_seed}
+                  onSelect={(style, seed) => updateAvatarMutation.mutate({ memberId: member.id, style, seed })}
+                />
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-2">
                 <p className="text-xs text-green-600 dark:text-green-400">{t('members.deposited')}</p>

@@ -70,6 +70,13 @@ main {
   overflow-x: hidden;
 }
 
+/* iOS keyboard - ensure modals scroll above keyboard */
+@supports (height: 100dvh) {
+  .fixed.inset-0 {
+    height: 100dvh;
+  }
+}
+
 .pb-safe {
   padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }
