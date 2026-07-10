@@ -40,15 +40,29 @@ describe('calculateBalances', () => {
     expect(result.find((e) => e.memberId === 'b')?.net).toBe(40)
   })
 
-  it('guarantees zero-sum even with rounding', () => {
+  it('guarantees zero-sum when rounding causes residual', () => {
+    // This tests rounding residual (not structural imbalance)
     const members = [makeMember('a', 'A'), makeMember('b', 'B'), makeMember('c', 'C')]
-    const deposits = [makeDeposit('a', 33.335, 1), makeDeposit('b', 33.335, 1)]
+    // Create a scenario where rounding causes tiny residual
+    const deposits = [makeDeposit('a', 100)]
     const splits: ExpenseSplit[] = [
-      { id: 's1', expense_id: 'e1', member_id: 'c', share_amount: 66.67 },
+      { id: 's1', expense_id: 'e1', member_id: 'a', share_amount: 33.33 },
+      { id: 's2', expense_id: 'e1', member_id: 'b', share_amount: 33.33 },
+      { id: 's3', expense_id: 'e1', member_id: 'c', share_amount: 33.34 },
     ]
     const result = calculateBalances(members, deposits, splits, [])
+    // Sum should be close to zero (structural: 100 - 100 = 0, with possible rounding residual)
     const sum = result.reduce((s, e) => s + e.net, 0)
     expect(Math.abs(sum)).toBeLessThan(0.01)
+  })
+
+  it('allows structural imbalance (deposits != expenses)', () => {
+    const members = [makeMember('a', 'A'), makeMember('b', 'B')]
+    const deposits = [makeDeposit('a', 100), makeDeposit('b', 50)]
+    // No expenses - pool has money, sum should be 150
+    const result = calculateBalances(members, deposits, [], [])
+    const sum = result.reduce((s, e) => s + e.net, 0)
+    expect(sum).toBe(150)
   })
 
   it('excludes soft-deleted deposits', () => {

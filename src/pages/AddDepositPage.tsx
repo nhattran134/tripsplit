@@ -69,7 +69,7 @@ export function AddDepositPage() {
   })
 
   const baseCurrency = trip?.base_currency || 'VND'
-  const isSameCurrency = currency === baseCurrency
+  const isSameCurrency = !currency || currency === baseCurrency
 
   return (
     <div className="space-y-4 pb-8">

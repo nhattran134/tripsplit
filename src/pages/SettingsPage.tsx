@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, RefreshCw, Globe, Download, Share2, FileSpreadsheet } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Globe, Download, Share2, FileSpreadsheet, Archive, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { useAppStore } from '@/lib/store'
 import { COMMON_CURRENCIES, fetchRate } from '@/lib/currency'
 import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { exportCSV, exportTextToClipboard } from '@/lib/export'
@@ -19,7 +20,18 @@ export function SettingsPage() {
   const [fetchingRate, setFetchingRate] = useState(false)
   const [rateFrom, setRateFrom] = useState('')
   const [rateResult, setRateResult] = useState<string | null>(null)
-  const { copy, copiedId } = useCopy()
+  const { copiedId, markCopied } = useCopy()
+  const { removeTrip } = useAppStore()
+
+  // Session for admin check
+  const { data: currentSession } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession()
+      return data.session
+    },
+  })
+  const currentAuthUid = currentSession?.user?.id
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -38,6 +50,8 @@ export function SettingsPage() {
       return data as Member[]
     },
   })
+
+  const isAdmin = members.some((m) => m.auth_uid === currentAuthUid && m.is_admin)
 
   const { data: deposits = [] } = useQuery({
     queryKey: ['deposits', tripId],
@@ -178,7 +192,7 @@ export function SettingsPage() {
                 {rateResult}
               </p>
             )}
-            <p className="text-xs text-slate-400">Mid-market rate (ECB data). Use this when entering expenses in foreign currencies.</p>
+            <p className="text-xs text-slate-400">Mid-market rate. Supports VND, THB, JPY, USD, EUR and 150+ currencies.</p>
           </div>
 
           {/* Export */}
@@ -206,7 +220,7 @@ export function SettingsPage() {
                   const balances = calculateBalances(members, deposits, expenseSplits, settlements)
                   const transfers = simplifyDebts(balances, members)
                   exportTextToClipboard({ tripName: trip.name, baseCurrency: trip.base_currency, members, deposits, expenses, expenseSplits, settlements, balances, transfers })
-                  copy('exported', 'text-export')
+                  markCopied('text-export')
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border text-sm font-medium transition-all duration-200 ${
                   copiedId === 'text-export'
@@ -238,6 +252,147 @@ export function SettingsPage() {
                 🇻🇳 Tiếng Việt
               </button>
             </div>
+          </div>
+
+          {/* Trip Management - admin only */}
+          {isAdmin && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+              <p className="font-semibold text-sm">Trip Management</p>
+
+              {/* Finalize / Mark Done */}
+              {trip.archived_at ? (
+                <div className="text-center py-2">
+                  <p className="text-sm text-green-600 font-medium">✓ Trip is finalized</p>
+                </div>
+              ) : (
+                <button
+                  onClick={async () => {
+                    if (!confirm('Mark this trip as done? Members can still view but not add new transactions.')) return
+                    const { error } = await supabase
+                      .from('trips')
+                      .update({ archived_at: new Date().toISOString() })
+                      .eq('id', tripId)
+                    if (!error) {
+                      queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-green-300 text-green-700 dark:text-green-400 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
+                >
+                  ✓ Finalize Trip
+                </button>
+              )}
+
+              {/* Reopen */}
+              {trip.archived_at && (
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase
+                      .from('trips')
+                      .update({ archived_at: null })
+                      .eq('id', tripId)
+                    if (!error) {
+                      queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-indigo-300 text-indigo-700 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                >
+                  ↺ Reopen Trip
+                </button>
+              )}
+
+              {/* Reset Trip */}
+              <button
+                onClick={async () => {
+                  const confirmation = prompt('Type "RESET" to clear all expenses, deposits, and settlements (members are kept):')
+                  if (confirmation !== 'RESET') return
+                  await supabase.from('settlements').delete().eq('trip_id', tripId)
+                  await supabase.from('expense_splits').delete().in('expense_id',
+                    (await supabase.from('expenses').select('id').eq('trip_id', tripId)).data?.map((e: any) => e.id) || []
+                  )
+                  await supabase.from('expenses').delete().eq('trip_id', tripId)
+                  await supabase.from('deposits').delete().eq('trip_id', tripId)
+                  // Reopen if finalized
+                  await supabase.from('trips').update({ archived_at: null }).eq('id', tripId)
+                  queryClient.invalidateQueries()
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-orange-300 text-orange-700 dark:text-orange-400 text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
+              >
+                ↺ Reset Trip (keep members)
+              </button>
+
+              <p className="text-[10px] text-slate-400">Finalize marks the trip as done. Reset clears all financial data but keeps members.</p>
+            </div>
+          )}
+
+          {/* Danger Zone - admin only */}
+          {isAdmin && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-red-200 dark:border-red-900 space-y-3">
+              <p className="font-semibold text-sm text-red-600">Danger Zone</p>
+
+              <button
+                onClick={async () => {
+                  if (!confirm('Archive this trip? It will be hidden from all members.')) return
+                  const { error } = await supabase
+                    .from('trips')
+                    .update({ archived_at: new Date().toISOString() })
+                    .eq('id', tripId)
+                  if (!error) {
+                    removeTrip(tripId!)
+                    navigate('/')
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-300 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+              >
+                <Archive size={16} />
+                Archive Trip
+              </button>
+
+              <button
+                onClick={async () => {
+                  const confirmation = prompt('Type "DELETE" to permanently delete this trip and all its data:')
+                  if (confirmation !== 'DELETE') return
+                  const { error } = await supabase
+                    .from('trips')
+                    .delete()
+                    .eq('id', tripId)
+                  if (!error) {
+                    removeTrip(tripId!)
+                    navigate('/')
+                  }
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              >
+                <Trash2 size={16} />
+                Delete Trip Permanently
+              </button>
+
+              <p className="text-[10px] text-slate-400">Archive hides the trip. Delete removes all data permanently (cannot be undone).</p>
+            </div>
+          )}
+
+          {/* Logout / Switch Member */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+            <p className="font-semibold text-sm">Account</p>
+            <p className="text-xs text-slate-500">
+              Logged in as: <span className="font-medium text-slate-700 dark:text-slate-300">
+                {members.find((m) => m.auth_uid === currentAuthUid)?.name || 'Unknown'}
+              </span>
+            </p>
+            <button
+              onClick={() => {
+                if (confirm('Log out? You will need your member PIN to log back in.')) {
+                  supabase.auth.signOut()
+                  removeTrip(tripId!)
+                  localStorage.removeItem('tripsplit-store')
+                  navigate('/')
+                  window.location.reload()
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
+              Log Out
+            </button>
+            <p className="text-[10px] text-slate-400">To switch to a different member, log out first, then rejoin with the invite link or trip code and enter the other member's PIN.</p>
           </div>
         </div>
       )}

@@ -3,6 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
+import { Avatar } from '@/components/common/Avatar'
 import type { Member } from '@/types'
 
 export function JoinTripPage() {
@@ -21,7 +22,6 @@ export function JoinTripPage() {
   const [needsPin, setNeedsPin] = useState(false)
   const [trip, setTrip] = useState<any>(null)
   const [allMembers, setAllMembers] = useState<Member[]>([])
-  const [unclaimedMembers, setUnclaimedMembers] = useState<Member[]>([])
   const [selectedMember, setSelectedMember] = useState<string | null>(claimMemberId)
   const [mode, setMode] = useState<'pick' | 'new'>('pick')
   const [showTokenInput, setShowTokenInput] = useState(!!claimMemberId)
@@ -44,19 +44,18 @@ export function JoinTripPage() {
 
         const { data: members } = await supabase
           .from('members')
-          .select('*')
+          .select('id, trip_id, auth_uid, name, color, is_admin, claimed, joined_at, deleted_at')
           .eq('trip_id', tripData.id)
           .is('deleted_at', null)
 
         if (members) {
           setAllMembers(members as Member[])
-          const unclaimed = members.filter((m: any) => !m.claimed)
-          setUnclaimedMembers(unclaimed as Member[])
+          setAllMembers(members as Member[])
 
           if (claimMemberId) {
             setMode('pick')
             setShowTokenInput(true)
-          } else if (unclaimed.length > 0) {
+          } else if (members.length > 0) {
             setMode('pick')
           } else {
             setMode('new')
@@ -98,16 +97,17 @@ export function JoinTripPage() {
         .is('deleted_at', null)
         .single()
 
-      if (existing) {
+      const memberToClaim = claimMemberId || selectedMember
+
+      // Only skip if already a member AND not trying to claim a different member
+      if (existing && !memberToClaim) {
         addTrip({ id: trip.id, name: trip.name, invite_code: trip.invite_code, joined_at: new Date().toISOString() })
         navigate(`/trip/${trip.id}`)
         return
       }
 
-      const memberToClaim = claimMemberId || selectedMember
-
       if (memberToClaim && (mode === 'pick' || claimMemberId)) {
-        // Claiming an existing member — verify token
+        // Claiming an existing member — verify PIN server-side
         if (!token.trim()) {
           setShowTokenInput(true)
           setError('Enter the member PIN to claim this account')
@@ -115,21 +115,25 @@ export function JoinTripPage() {
           return
         }
 
-        // Verify token matches
-        const targetMember = allMembers.find((m) => m.id === memberToClaim)
-        if (!targetMember || targetMember.member_token?.toUpperCase() !== token.trim().toUpperCase()) {
-          setError('Incorrect PIN. Ask the trip admin for your PIN.')
+        // Call Edge Function for server-side PIN verification + claim
+        const response = await supabase.functions.invoke('claim-member', {
+          body: { member_id: memberToClaim, pin: token.trim(), trip_id: trip.id },
+        })
+
+        if (response.error) {
+          throw new Error(response.error.message)
+        }
+
+        const result = response.data
+        if (result.error) {
+          if (result.error === 'Invalid PIN') {
+            setError('Incorrect PIN. Ask the trip admin for your PIN.')
+          } else {
+            setError(result.error)
+          }
           setLoading(false)
           return
         }
-
-        // Claim: update auth_uid and mark claimed
-        const { error: claimError } = await supabase
-          .from('members')
-          .update({ auth_uid: authUid, claimed: true })
-          .eq('id', memberToClaim)
-
-        if (claimError) throw new Error(claimError.message)
       } else {
         // Create new member
         if (!name.trim()) {
@@ -211,11 +215,11 @@ export function JoinTripPage() {
         </div>
 
         {/* Unclaimed members to pick from */}
-        {!claimMemberId && !duplicateDetected && unclaimedMembers.length > 0 && (
+        {!claimMemberId && !duplicateDetected && allMembers.length > 0 && (
           <div>
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">{t('join.iAm')}</p>
-            <div className="space-y-2">
-              {unclaimedMembers.map((m) => (
+            <div className="space-y-2 max-h-52 overflow-y-auto">
+              {allMembers.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => { setSelectedMember(m.id); setMode('pick'); setShowTokenInput(true) }}
@@ -225,13 +229,9 @@ export function JoinTripPage() {
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: m.color }}
-                  >
-                    {m.name.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar name={m.name} size={32} />
                   <span className="font-medium text-sm">{m.name}</span>
+                  {!m.claimed && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-auto">Unclaimed</span>}
                 </button>
               ))}
 
@@ -243,7 +243,7 @@ export function JoinTripPage() {
                     : 'border-slate-200 dark:border-slate-700'
                 }`}
               >
-                <div className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm font-bold">
+                <div className="w-8 h-8 rounded-full grid place-items-center bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm font-bold leading-none">
                   +
                 </div>
                 <span className="font-medium text-sm text-slate-600 dark:text-slate-400">{t('join.someoneElse')}</span>

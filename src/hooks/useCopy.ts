@@ -9,5 +9,11 @@ export function useCopy() {
     setTimeout(() => setCopiedId(null), 2000)
   }, [])
 
-  return { copy, copiedId }
+  // Just trigger the visual feedback (when clipboard was already written elsewhere)
+  const markCopied = useCallback((id: string) => {
+    setCopiedId(id)
+    setTimeout(() => setCopiedId(null), 2000)
+  }, [])
+
+  return { copy, copiedId, markCopied }
 }

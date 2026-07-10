@@ -122,7 +122,7 @@ export function AddExpensePage() {
   })
 
   const baseCurrency = trip?.base_currency || 'VND'
-  const isSameCurrency = currency === baseCurrency
+  const isSameCurrency = !currency || currency === baseCurrency
 
   const toggleMember = (id: string) => {
     setSelectedMembers((prev) =>
@@ -131,7 +131,7 @@ export function AddExpensePage() {
   }
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-4 pb-8 overflow-hidden">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate(`/trip/${tripId}`)} className="text-indigo-600 dark:text-indigo-400">←</button>
         <h1 className="text-xl font-bold">{t('expense.title')}</h1>
@@ -217,8 +217,8 @@ export function AddExpensePage() {
       </div>
 
       {/* Description + Date */}
-      <div className="flex gap-2">
-        <div className="flex-1">
+      <div className="grid grid-cols-[1fr_auto] gap-2 items-end">
+        <div>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.description')}</label>
           <input
             type="text"
@@ -228,7 +228,7 @@ export function AddExpensePage() {
             className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
           />
         </div>
-        <div className="w-36">
+        <div>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.date')}</label>
           <input
             type="date"

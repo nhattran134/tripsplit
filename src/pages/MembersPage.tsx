@@ -7,6 +7,7 @@ import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { useCopy } from '@/hooks/useCopy'
+import { Avatar } from '@/components/common/Avatar'
 import type { Member, Deposit, ExpenseSplit, Settlement } from '@/types'
 
 export function MembersPage() {
@@ -198,22 +199,18 @@ export function MembersPage() {
         {memberStats.map(({ member, totalDeposited, totalOwed, net }) => (
           <div key={member.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
             <div className="flex items-center gap-3 mb-3">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold"
-                style={{ backgroundColor: member.color }}
-              >
-                {member.name.charAt(0).toUpperCase()}
-              </div>
+              <Avatar name={member.name} size={40} />
               <div className="flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-semibold">{member.name}</p>
+                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
                   {!member.claimed && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">{t('members.unclaimed')}</span>}
                 </div>
-                {/* Show token to admin or the member themselves */}
-                {(isAdmin || member.auth_uid === currentAuthUid) && member.member_token && (
-                  <p className="text-[10px] font-mono text-slate-400 mt-0.5">PIN: {member.member_token}</p>
-                )}
+                {/* Show token - visible to all trip members */}
+                <p className="text-[10px] font-mono bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-slate-500 mt-0.5 inline-block">
+                  PIN: <span className="font-bold text-slate-700 dark:text-slate-200">{member.member_token || '...'}</span>
+                </p>
               </div>
               <span className={`font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {net >= 0 ? '+' : ''}{formatCurrency(net, baseCurrency)}

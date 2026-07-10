@@ -2,8 +2,11 @@ import { useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { ArrowLeft, Settings, Receipt, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { Avatar } from '@/components/common/Avatar'
 import { useAppStore } from '@/lib/store'
+import { useMyMemberIds } from '@/hooks/useMyMember'
 import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency, formatAmount } from '@/lib/currency'
 import { useCopy } from '@/hooks/useCopy'
@@ -107,14 +110,7 @@ export function TripDashboardPage() {
   })
 
   // Current user identification
-  const { data: currentSession } = useQuery({
-    queryKey: ['session'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession()
-      return data.session
-    },
-  })
-  const currentAuthUid = currentSession?.user?.id
+  const { myMemberIds } = useMyMemberIds(tripId)
 
   if (tripLoading) {
     return <div className="flex items-center justify-center py-12"><p className="text-slate-500">{t('common.loading')}</p></div>
@@ -136,14 +132,14 @@ export function TripDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <button onClick={() => navigate('/')} className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">← {t('common.trips')}</button>
+          <button onClick={() => navigate('/')} className="text-sm text-indigo-600 dark:text-indigo-400 mb-1 flex items-center gap-1"><ArrowLeft size={14} /> {t('common.trips')}</button>
           <h1 className="text-xl font-bold">{trip.name}</h1>
         </div>
         <button
           onClick={() => navigate(`/trip/${tripId}/settings`)}
-          className="text-slate-500 hover:text-slate-700 text-xl"
+          className="text-slate-500 hover:text-slate-700"
         >
-          ⚙️
+          <Settings size={22} />
         </button>
       </div>
 
@@ -179,14 +175,9 @@ export function TripDashboardPage() {
             return (
               <div key={member.id} className="flex items-center justify-between py-1">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: member.color }}
-                  >
-                    {member.name.charAt(0).toUpperCase()}
-                  </div>
+                  <Avatar name={member.name} size={32} />
                   <span className="font-medium text-sm">{member.name}</span>
-                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
+                  {myMemberIds.includes(member.id) && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
                 </div>
                 <span className={`text-sm font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -271,7 +262,7 @@ export function TripDashboardPage() {
                 return (
                   <div key={item.id} className="flex items-center justify-between py-1">
                     <div className="flex items-center gap-2">
-                      <span>{isExpense ? '💸' : '💰'}</span>
+                      <span>{isExpense ? <Receipt size={16} className="text-red-500" /> : <Wallet size={16} className="text-green-500" />}</span>
                       <div>
                         <p className="text-sm font-medium">
                           {isExpense ? (item as Expense).description || (item as Expense).category : t('dashboard.deposit')}

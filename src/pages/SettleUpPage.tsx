@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabase'
 import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
+import { Avatar } from '@/components/common/Avatar'
 import type { Member, Deposit, ExpenseSplit, Settlement } from '@/types'
 
 export function SettleUpPage() {
@@ -100,9 +101,19 @@ export function SettleUpPage() {
 
       {transfers.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-4xl mb-4">✅</p>
-          <p className="font-semibold text-green-600">{t('settle.allSettled')}</p>
-          <p className="text-sm text-slate-500 mt-1">{t('settle.allSettledHint')}</p>
+          {expenseSplits.length === 0 && deposits.length === 0 ? (
+            <>
+              <p className="text-4xl mb-4">📝</p>
+              <p className="font-semibold text-slate-600 dark:text-slate-300">No transactions yet</p>
+              <p className="text-sm text-slate-500 mt-1">Add expenses and deposits to see settlements</p>
+            </>
+          ) : (
+            <>
+              <p className="text-4xl mb-4">✅</p>
+              <p className="font-semibold text-green-600">{t('settle.allSettled')}</p>
+              <p className="text-sm text-slate-500 mt-1">{t('settle.allSettledHint')}</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="space-y-3">
@@ -116,19 +127,9 @@ export function SettleUpPage() {
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: transfer.from.color }}
-                  >
-                    {transfer.from.name.charAt(0)}
-                  </div>
+                  <Avatar name={transfer.from.name} size={32} />
                   <span className="text-sm">→</span>
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ backgroundColor: transfer.to.color }}
-                  >
-                    {transfer.to.name.charAt(0)}
-                  </div>
+                  <Avatar name={transfer.to.name} size={32} />
                 </div>
                 <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
               </div>

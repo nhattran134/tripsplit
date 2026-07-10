@@ -27,18 +27,17 @@ export function formatCurrency(amount: number, currency: string): string {
 /**
  * Fetch exchange rate.
  * rate_to_base means: 1 unit of fromCurrency = X units of baseCurrency
- * Uses frankfurter.app (free, no API key, CORS-friendly, ECB data).
+ * Uses open.er-api.com (free, no key, CORS-friendly, supports 150+ currencies including VND).
  */
 export async function fetchRate(fromCurrency: string, baseCurrency: string): Promise<number | null> {
   if (fromCurrency === baseCurrency) return 1
 
   try {
-    const response = await fetch(
-      `https://api.frankfurter.app/latest?from=${fromCurrency}&to=${baseCurrency}`
-    )
+    // open.er-api.com returns all rates from a base currency
+    const response = await fetch(`https://open.er-api.com/v6/latest/${fromCurrency}`)
     if (response.ok) {
       const data = await response.json()
-      if (data?.rates?.[baseCurrency]) {
+      if (data?.result === 'success' && data?.rates?.[baseCurrency]) {
         return data.rates[baseCurrency]
       }
     }
@@ -47,13 +46,14 @@ export async function fetchRate(fromCurrency: string, baseCurrency: string): Pro
   }
 
   try {
-    // Fallback: exchangerate.host
-    const response = await fetch(
-      `https://api.exchangerate.host/convert?from=${fromCurrency}&to=${baseCurrency}&amount=1`
-    )
-    const data = await response.json()
-    if (data.success && data.result) {
-      return data.result
+    // Fallback: try from the other direction
+    const response = await fetch(`https://open.er-api.com/v6/latest/${baseCurrency}`)
+    if (response.ok) {
+      const data = await response.json()
+      if (data?.result === 'success' && data?.rates?.[fromCurrency]) {
+        // Invert: if 1 base = X from, then 1 from = 1/X base
+        return 1 / data.rates[fromCurrency]
+      }
     }
   } catch {
     // Both failed

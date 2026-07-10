@@ -117,7 +117,9 @@ export function exportTextToClipboard(data: ExportData): string {
 }
 
 function downloadFile(content: string, filename: string, mimeType: string): void {
-  const blob = new Blob([content], { type: mimeType })
+  // Add UTF-8 BOM for Excel compatibility with Vietnamese characters
+  const BOM = '\uFEFF'
+  const blob = new Blob([BOM + content], { type: `${mimeType};charset=utf-8` })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
