@@ -89,12 +89,18 @@ export function MembersPage() {
       const colors = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#ef4444', '#14b8a6']
       const color = colors[Math.floor(Math.random() * colors.length)]
       const placeholderUid = crypto.randomUUID()
+      // Generate a 4-char PIN for the member
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+      let memberToken = ''
+      for (let i = 0; i < 4; i++) memberToken += chars[Math.floor(Math.random() * chars.length)]
+
       const { error } = await supabase.from('members').insert({
         id: generateId(),
         trip_id: tripId,
         auth_uid: placeholderUid,
         name: newName.trim(),
         color,
+        member_token: memberToken,
         claimed: false,
       })
       if (error) {
@@ -199,9 +205,15 @@ export function MembersPage() {
                 {member.name.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1">
-                <p className="font-semibold">{member.name}</p>
-                {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
-                {!member.claimed && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded ml-1">{t('members.unclaimed')}</span>}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-semibold">{member.name}</p>
+                  {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
+                  {!member.claimed && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">{t('members.unclaimed')}</span>}
+                </div>
+                {/* Show token to admin or the member themselves */}
+                {(isAdmin || member.auth_uid === currentAuthUid) && member.member_token && (
+                  <p className="text-[10px] font-mono text-slate-400 mt-0.5">PIN: {member.member_token}</p>
+                )}
               </div>
               <span className={`font-bold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {net >= 0 ? '+' : ''}{formatCurrency(net, baseCurrency)}

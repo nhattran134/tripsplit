@@ -9,21 +9,25 @@ export function JoinTripPage() {
   const { inviteCode } = useParams<{ inviteCode: string }>()
   const [searchParams] = useSearchParams()
   const claimMemberId = searchParams.get('claim')
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const { addTrip } = useAppStore()
-  const { t } = useTranslation()
 
   const [name, setName] = useState('')
+  const [token, setToken] = useState('')
   const [pin, setPin] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [needsPin, setNeedsPin] = useState(false)
   const [trip, setTrip] = useState<any>(null)
+  const [allMembers, setAllMembers] = useState<Member[]>([])
   const [unclaimedMembers, setUnclaimedMembers] = useState<Member[]>([])
   const [selectedMember, setSelectedMember] = useState<string | null>(claimMemberId)
   const [mode, setMode] = useState<'pick' | 'new'>('pick')
+  const [showTokenInput, setShowTokenInput] = useState(!!claimMemberId)
+  const [duplicateDetected, setDuplicateDetected] = useState(false)
 
-  // Load trip and unclaimed members
+  // Load trip and members
   useEffect(() => {
     const load = async () => {
       await ensureAnonymousAuth()
@@ -38,25 +42,25 @@ export function JoinTripPage() {
       if (tripData) {
         setTrip(tripData)
 
-        // If claiming a specific member via link, skip the pick UI
-        if (claimMemberId) {
-          setMode('new') // will auto-claim
-          return
-        }
-
-        // Fetch unclaimed members
         const { data: members } = await supabase
           .from('members')
           .select('*')
           .eq('trip_id', tripData.id)
-          .eq('claimed', false)
           .is('deleted_at', null)
 
-        if (members && members.length > 0) {
-          setUnclaimedMembers(members as Member[])
-          setMode('pick')
-        } else {
-          setMode('new')
+        if (members) {
+          setAllMembers(members as Member[])
+          const unclaimed = members.filter((m: any) => !m.claimed)
+          setUnclaimedMembers(unclaimed as Member[])
+
+          if (claimMemberId) {
+            setMode('pick')
+            setShowTokenInput(true)
+          } else if (unclaimed.length > 0) {
+            setMode('pick')
+          } else {
+            setMode('new')
+          }
         }
       }
     }
@@ -66,6 +70,7 @@ export function JoinTripPage() {
   const handleJoin = async () => {
     setLoading(true)
     setError('')
+    setDuplicateDetected(false)
 
     try {
       const authUid = await ensureAnonymousAuth()
@@ -79,7 +84,7 @@ export function JoinTripPage() {
       // Check PIN if required
       if (trip.pin_hash && !pin) {
         setNeedsPin(true)
-        setError('This trip requires a PIN')
+        setError(t('join.pinRequired'))
         setLoading(false)
         return
       }
@@ -94,7 +99,6 @@ export function JoinTripPage() {
         .single()
 
       if (existing) {
-        // Already a member, just navigate
         addTrip({ id: trip.id, name: trip.name, invite_code: trip.invite_code, joined_at: new Date().toISOString() })
         navigate(`/trip/${trip.id}`)
         return
@@ -102,28 +106,49 @@ export function JoinTripPage() {
 
       const memberToClaim = claimMemberId || selectedMember
 
-      if (memberToClaim && mode === 'pick') {
-        // Claim an existing unclaimed member
+      if (memberToClaim && (mode === 'pick' || claimMemberId)) {
+        // Claiming an existing member — verify token
+        if (!token.trim()) {
+          setShowTokenInput(true)
+          setError('Enter the member PIN to claim this account')
+          setLoading(false)
+          return
+        }
+
+        // Verify token matches
+        const targetMember = allMembers.find((m) => m.id === memberToClaim)
+        if (!targetMember || targetMember.member_token?.toUpperCase() !== token.trim().toUpperCase()) {
+          setError('Incorrect PIN. Ask the trip admin for your PIN.')
+          setLoading(false)
+          return
+        }
+
+        // Claim: update auth_uid and mark claimed
         const { error: claimError } = await supabase
           .from('members')
           .update({ auth_uid: authUid, claimed: true })
           .eq('id', memberToClaim)
-          .eq('claimed', false)
-
-        if (claimError) throw new Error(claimError.message)
-      } else if (claimMemberId) {
-        // Direct claim link
-        const { error: claimError } = await supabase
-          .from('members')
-          .update({ auth_uid: authUid, claimed: true })
-          .eq('id', claimMemberId)
-          .eq('claimed', false)
 
         if (claimError) throw new Error(claimError.message)
       } else {
-        // Create a new member
+        // Create new member
         if (!name.trim()) {
           setError('Please enter your name')
+          setLoading(false)
+          return
+        }
+
+        // Check if name already exists (case insensitive)
+        const existingByName = allMembers.find(
+          (m) => m.name.toLowerCase() === name.trim().toLowerCase()
+        )
+
+        if (existingByName) {
+          // Name exists — ask for token to claim it instead
+          setDuplicateDetected(true)
+          setSelectedMember(existingByName.id)
+          setShowTokenInput(true)
+          setError(`"${existingByName.name}" already exists. Enter their PIN to log in as them, or choose a different name.`)
           setLoading(false)
           return
         }
@@ -136,10 +161,13 @@ export function JoinTripPage() {
           .insert({ trip_id: trip.id, auth_uid: authUid, name: name.trim(), color, claimed: true })
 
         if (memberError) {
-          if (memberError.message.includes('idx_members_unique_name_per_trip') || memberError.message.includes('duplicate')) {
-            throw new Error('This name is already taken in the trip. Please choose a different name.')
+          if (memberError.message.includes('duplicate') || memberError.message.includes('unique')) {
+            setError('This name is already taken. Please choose a different name.')
+          } else {
+            throw new Error(memberError.message)
           }
-          throw new Error(memberError.message)
+          setLoading(false)
+          return
         }
       }
 
@@ -150,6 +178,17 @@ export function JoinTripPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Handle "claim with token" when duplicate is detected
+  const handleClaimWithToken = async () => {
+    if (!selectedMember || !token.trim()) {
+      setError('Enter the PIN')
+      return
+    }
+    setDuplicateDetected(false)
+    setMode('pick')
+    await handleJoin()
   }
 
   if (!trip) {
@@ -166,24 +205,22 @@ export function JoinTripPage() {
         <div className="text-center">
           <p className="text-4xl mb-2">🎒</p>
           <h1 className="text-xl font-bold text-slate-900 dark:text-white">{t('join.title')} {trip.name}</h1>
-          {claimMemberId ? (
-            <p className="text-sm text-slate-500">{t('join.claimSpot')}</p>
-          ) : (
-            <p className="text-sm text-slate-500">{t('join.pickOrCreate')}</p>
-          )}
+          <p className="text-sm text-slate-500">
+            {claimMemberId ? t('join.claimSpot') : t('join.pickOrCreate')}
+          </p>
         </div>
 
         {/* Unclaimed members to pick from */}
-        {!claimMemberId && unclaimedMembers.length > 0 && (
+        {!claimMemberId && !duplicateDetected && unclaimedMembers.length > 0 && (
           <div>
             <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">{t('join.iAm')}</p>
             <div className="space-y-2">
               {unclaimedMembers.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => { setSelectedMember(m.id); setMode('pick') }}
+                  onClick={() => { setSelectedMember(m.id); setMode('pick'); setShowTokenInput(true) }}
                   className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    selectedMember === m.id
+                    selectedMember === m.id && mode === 'pick'
                       ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
                       : 'border-slate-200 dark:border-slate-700'
                   }`}
@@ -198,11 +235,10 @@ export function JoinTripPage() {
                 </button>
               ))}
 
-              {/* Option to create new */}
               <button
-                onClick={() => { setSelectedMember(null); setMode('new') }}
+                onClick={() => { setSelectedMember(null); setMode('new'); setShowTokenInput(false); setError('') }}
                 className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                  mode === 'new' && !selectedMember
+                  mode === 'new'
                     ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
                     : 'border-slate-200 dark:border-slate-700'
                 }`}
@@ -216,23 +252,25 @@ export function JoinTripPage() {
           </div>
         )}
 
-        {/* Name input for new member */}
-        {(mode === 'new' && !claimMemberId && !selectedMember) && (
+        {/* Token input for claiming */}
+        {showTokenInput && (selectedMember || claimMemberId) && (
           <div>
-            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.yourName')}</label>
+            <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Member PIN</label>
             <input
               type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder={t('join.namePlaceholder')}
-              className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
+              value={token}
+              onChange={(e) => setToken(e.target.value.toUpperCase())}
+              placeholder="4-char PIN"
+              maxLength={4}
+              className="mt-1 w-full px-3 py-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-center text-xl font-mono tracking-widest uppercase"
               autoFocus
             />
+            <p className="text-[10px] text-slate-400 mt-1">Ask the trip admin for your PIN</p>
           </div>
         )}
 
-        {/* Name input when no unclaimed members exist */}
-        {unclaimedMembers.length === 0 && !claimMemberId && (
+        {/* Name input for new member */}
+        {mode === 'new' && !duplicateDetected && (
           <div>
             <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('trip.yourName')}</label>
             <input
@@ -241,7 +279,7 @@ export function JoinTripPage() {
               onChange={(e) => setName(e.target.value)}
               placeholder={t('join.namePlaceholder')}
               className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
-              autoFocus
+              autoFocus={!showTokenInput}
             />
           </div>
         )}
@@ -253,7 +291,7 @@ export function JoinTripPage() {
               type="text"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              placeholder="Enter PIN"
+              placeholder="Enter trip PIN"
               className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
             />
           </div>
@@ -262,12 +300,21 @@ export function JoinTripPage() {
         {error && <p className="text-red-500 text-sm text-center">{error}</p>}
 
         <button
-          onClick={handleJoin}
+          onClick={duplicateDetected ? handleClaimWithToken : handleJoin}
           disabled={loading}
           className="w-full px-4 py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
         >
-          {loading ? t('join.joining') : t('join.joinButton')}
+          {loading ? t('join.joining') : duplicateDetected ? 'Claim Account' : t('join.joinButton')}
         </button>
+
+        {duplicateDetected && (
+          <button
+            onClick={() => { setDuplicateDetected(false); setSelectedMember(null); setShowTokenInput(false); setError(''); setName('') }}
+            className="w-full text-sm text-slate-500 hover:text-slate-700"
+          >
+            ← Use a different name instead
+          </button>
+        )}
       </div>
     </div>
   )
