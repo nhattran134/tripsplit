@@ -20,6 +20,7 @@ export interface Member {
   member_token: string
   avatar_style: string
   avatar_seed: number
+  group_id: string | null
   joined_at: string
   deleted_at: string | null
 }

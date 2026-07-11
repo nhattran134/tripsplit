@@ -312,6 +312,145 @@ export function MembersPage() {
           </div>
         ))}
       </div>
+
+      {/* Groups Management (admin only) */}
+      {isAdmin && (
+        <GroupsSection tripId={tripId!} members={members.filter(m => !m.deleted_at)} />
+      )}
+    </div>
+  )
+}
+
+function GroupsSection({ tripId, members }: { tripId: string; members: Member[] }) {
+  const queryClient = useQueryClient()
+  const [newGroupName, setNewGroupName] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+
+  const { data: groups = [] } = useQuery({
+    queryKey: ['member-groups', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('member_groups').select('*').eq('trip_id', tripId)
+      if (error) throw error
+      return data as { id: string; trip_id: string; name: string }[]
+    },
+  })
+
+  const createGroupMutation = useMutation({
+    mutationFn: async () => {
+      if (!newGroupName.trim()) throw new Error('Enter a group name')
+      const { error } = await supabase.from('member_groups').insert({ trip_id: tripId, name: newGroupName.trim() })
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-groups', tripId] })
+      setNewGroupName('')
+      setShowCreate(false)
+    },
+  })
+
+  const assignMemberMutation = useMutation({
+    mutationFn: async ({ memberId, groupId }: { memberId: string; groupId: string | null }) => {
+      const { error } = await supabase.from('members').update({ group_id: groupId }).eq('id', memberId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['members', tripId] })
+    },
+  })
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      // Unassign members first
+      await supabase.from('members').update({ group_id: null }).eq('group_id', groupId)
+      const { error } = await supabase.from('member_groups').delete().eq('id', groupId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['member-groups', tripId] })
+      queryClient.invalidateQueries({ queryKey: ['members', tripId] })
+    },
+  })
+
+  return (
+    <div className="mt-6 space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="font-semibold">Groups</h2>
+        <button
+          onClick={() => setShowCreate(!showCreate)}
+          className="text-xs bg-indigo-600 text-white px-2.5 py-1 rounded-lg font-medium"
+        >
+          + Group
+        </button>
+      </div>
+
+      {showCreate && (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newGroupName}
+            onChange={(e) => setNewGroupName(e.target.value)}
+            placeholder="e.g. Couple, Family A"
+            className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+            autoFocus
+          />
+          <button
+            onClick={() => createGroupMutation.mutate()}
+            className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
+          >
+            Add
+          </button>
+        </div>
+      )}
+
+      {groups.length === 0 && !showCreate && (
+        <p className="text-xs text-slate-500">No groups yet. Create groups for couples or families to split expenses by group.</p>
+      )}
+
+      {groups.map((group) => {
+        const groupMembers = members.filter(m => m.group_id === group.id)
+        const unassigned = members.filter(m => !m.group_id)
+        return (
+          <div key={group.id} className="bg-white dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-medium text-sm">{group.name}</p>
+              <button
+                onClick={() => { if (confirm(`Delete group "${group.name}"?`)) deleteGroupMutation.mutate(group.id) }}
+                className="text-xs text-red-500 hover:text-red-700"
+              >
+                Delete
+              </button>
+            </div>
+            {/* Members in this group */}
+            <div className="flex flex-wrap gap-1 mb-2">
+              {groupMembers.map((m) => (
+                <span key={m.id} className="flex items-center gap-1 px-2 py-1 bg-indigo-50 dark:bg-indigo-900/30 rounded-full text-xs font-medium text-indigo-700 dark:text-indigo-300">
+                  {m.name}
+                  <button onClick={() => assignMemberMutation.mutate({ memberId: m.id, groupId: null })} className="text-indigo-400 hover:text-red-500">×</button>
+                </span>
+              ))}
+              {groupMembers.length === 0 && <span className="text-xs text-slate-400">No members</span>}
+            </div>
+            {/* Add member to group */}
+            {unassigned.length > 0 && (
+              <select
+                onChange={(e) => { if (e.target.value) assignMemberMutation.mutate({ memberId: e.target.value, groupId: group.id }); e.target.value = '' }}
+                className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent text-xs"
+                defaultValue=""
+              >
+                <option value="">+ Add member...</option>
+                {unassigned.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            )}
+          </div>
+        )
+      })}
+
+      {/* Show ungrouped members */}
+      {groups.length > 0 && (
+        <div className="text-xs text-slate-500">
+          Ungrouped: {members.filter(m => !m.group_id).map(m => m.name).join(', ') || 'none'}
+        </div>
+      )}
     </div>
   )
 }

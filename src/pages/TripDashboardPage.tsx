@@ -69,7 +69,7 @@ export function TripDashboardPage() {
         .from('members')
         .select('*')
         .eq('trip_id', tripId)
-        .is('deleted_at', null)
+        
       if (error) throw error
       return data as Member[]
     },
@@ -208,7 +208,7 @@ export function TripDashboardPage() {
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
         <h2 className="font-semibold mb-3">{t('dashboard.memberBalances')}</h2>
         <div className="space-y-2">
-          {members.map((member) => {
+          {members.filter(m => !m.deleted_at).map((member) => {
             const balance = balances.find((b) => b.memberId === member.id)
             const net = balance?.net ?? 0
             return (

@@ -28,7 +28,7 @@ export function SettleUpPage() {
   const { data: members = [] } = useQuery({
     queryKey: ['members', tripId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('members').select('*').eq('trip_id', tripId).is('deleted_at', null)
+      const { data, error } = await supabase.from('members').select('*').eq('trip_id', tripId)
       if (error) throw error
       return data as Member[]
     },
@@ -37,7 +37,7 @@ export function SettleUpPage() {
   const { data: deposits = [] } = useQuery({
     queryKey: ['deposits', tripId],
     queryFn: async () => {
-      const { data, error } = await supabase.from('deposits').select('*').eq('trip_id', tripId).is('deleted_at', null)
+      const { data, error } = await supabase.from('deposits').select('*').eq('trip_id', tripId)
       if (error) throw error
       return data as Deposit[]
     },

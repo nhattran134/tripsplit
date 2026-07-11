@@ -18,11 +18,10 @@ export function calculateBalances(
 ): BalanceEntry[] {
   const balanceMap = new Map<string, number>()
 
-  // Initialize all active members
+  // Initialize ALL members (including soft-deleted) for accurate math
+  // Deleted members still owe/are owed money from past transactions
   for (const member of members) {
-    if (!member.deleted_at) {
-      balanceMap.set(member.id, 0)
-    }
+    balanceMap.set(member.id, 0)
   }
 
   // Add deposits (money put INTO the pool)
