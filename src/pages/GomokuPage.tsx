@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft, Users, Wifi, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Avatar } from '@/components/common/Avatar'
-import { BOARD_SIZE, createBoard, checkWinner, boardFromMoves } from '@/lib/gomoku'
+import { checkWinner, boardFromMoves } from '@/lib/gomoku'
 import type { Stone, Board } from '@/lib/gomoku'
 import type { Member } from '@/types'
 
@@ -14,16 +14,29 @@ function GomokuBoard({ board, onPlace, lastMove, disabled }: {
   lastMove: { row: number; col: number } | null
   disabled: boolean
 }) {
-  const CELL_SIZE = 36 // bigger, easy to touch (44px tap target with padding)
+  const CELL_SIZE = 36
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Scroll to center of board on mount
+  useEffect(() => {
+    const el = containerRef.current
+    if (el) {
+      const boardWidth = CELL_SIZE * board[0].length
+      const boardHeight = CELL_SIZE * board.length
+      el.scrollLeft = (boardWidth - el.clientWidth) / 2
+      el.scrollTop = (boardHeight - el.clientHeight) / 2
+    }
+  }, [])
 
   return (
     <div
+      ref={containerRef}
       className="overflow-auto rounded-xl border-2 border-slate-400 dark:border-slate-600 touch-pan-x touch-pan-y"
       style={{ maxHeight: '60vh', WebkitOverflowScrolling: 'touch' }}
     >
       <div
         className="bg-slate-200 dark:bg-slate-800 relative"
-        style={{ width: CELL_SIZE * BOARD_SIZE, height: CELL_SIZE * BOARD_SIZE, minWidth: CELL_SIZE * BOARD_SIZE }}
+        style={{ width: CELL_SIZE * board[0].length, height: CELL_SIZE * board.length, minWidth: CELL_SIZE * board[0].length }}
       >
         {board.map((row, r) => (
           <div key={r} className="flex">
@@ -40,9 +53,11 @@ function GomokuBoard({ board, onPlace, lastMove, disabled }: {
                   <div className="absolute w-full h-px bg-slate-400/50 top-1/2" />
                   <div className="absolute h-full w-px bg-slate-400/50 left-1/2" />
                 </div>
-                {/* Star points (standard Gomoku markers) */}
-                {((r === 3 || r === 7 || r === 11) && (c === 3 || c === 7 || c === 11)) && !cell && (
-                  <div className="absolute w-2 h-2 bg-slate-500/50 rounded-full z-0" />
+                {/* Star points + center marker */}
+                {((r === 3 || r === 9 || r === 15) && (c === 3 || c === 9 || c === 15)) && !cell && (
+                  <div className={`absolute rounded-full z-0 ${
+                    r === 9 && c === 9 ? 'w-3 h-3 bg-slate-600/60' : 'w-2 h-2 bg-slate-500/40'
+                  }`} />
                 )}
                 {/* Stone */}
                 {cell && (
@@ -127,8 +142,8 @@ export function GomokuPage() {
   const queryClient = useQueryClient()
 
   const [mode, setMode] = useState<'menu' | 'local' | 'online'>('menu')
-  const [board, setBoard] = useState<Board>(createBoard())
-  const [boardSize, setBoardSize] = useState(BOARD_SIZE)
+  const [board, setBoard] = useState<Board>(Array(19).fill(null).map(() => Array(19).fill(null)))
+  const [boardSize] = useState(19)
   const [moves, setMoves] = useState<{row: number; col: number; color: Stone}[]>([])
   const [currentTurn, setCurrentTurn] = useState<Stone>('black')
   const [winner, setWinner] = useState<Stone | 'draw' | null>(null)
@@ -164,56 +179,17 @@ export function GomokuPage() {
   turnRef.current = currentTurn
   winnerRef.current = winner
 
-  // Expand board if a stone is placed within 2 cells of any edge
-  const maybeExpandBoard = (b: Board, row: number, col: number): Board => {
-    const size = b.length
-    const MARGIN = 2
-    let expandTop = row < MARGIN ? MARGIN : 0
-    let expandBottom = row >= size - MARGIN ? MARGIN : 0
-    let expandLeft = col < MARGIN ? MARGIN : 0
-    let expandRight = col >= size - MARGIN ? MARGIN : 0
-
-    if (!expandTop && !expandBottom && !expandLeft && !expandRight) return b
-
-    const newSize = size + expandTop + expandBottom
-    const newWidth = (b[0]?.length || size) + expandLeft + expandRight
-    const newBoard: Board = Array(newSize).fill(null).map(() => Array(newWidth).fill(null))
-
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < (b[0]?.length || size); c++) {
-        newBoard[r + expandTop][c + expandLeft] = b[r][c]
-      }
-    }
-
-    setBoardSize(newSize)
-
-    // Adjust moves offset
-    if (expandTop || expandLeft) {
-      setMoves(prev => prev.map(m => ({
-        ...m,
-        row: m.row + expandTop,
-        col: m.col + expandLeft,
-      })))
-    }
-
-    return newBoard
-  }
-
   const handleLocalPlace = useCallback((row: number, col: number) => {
     if (winnerRef.current || boardRef.current[row][col]) return
     const turn = turnRef.current!
     const newBoard = boardRef.current.map(r => [...r])
     newBoard[row][col] = turn
-    
+    setBoard(newBoard)
+
     const w = checkWinner(newBoard, row, col)
-    if (w) { setBoard(newBoard); setWinner(w); setMoves(prev => [...prev, { row, col, color: turn }]); return }
-    
-    // Expand board if near edge
-    const expandedBoard = maybeExpandBoard(newBoard, row, col)
-    setBoard(expandedBoard)
-    
     const newMoves = [...moves, { row, col, color: turn }]
     setMoves(newMoves)
+    if (w) { setWinner(w); return }
     if (newMoves.length === boardSize * boardSize) { setWinner('draw'); return }
     setCurrentTurn(turn === 'black' ? 'white' : 'black')
   }, [moves, boardSize])
@@ -350,7 +326,7 @@ export function GomokuPage() {
   })
 
   const resetGame = () => {
-    setBoard(createBoard())
+    setBoard(Array(19).fill(null).map(() => Array(19).fill(null)))
     setMoves([])
     setCurrentTurn('black')
     setWinner(null)
@@ -568,11 +544,11 @@ export function GomokuPage() {
       <div className="text-center">
         {winner ? (
           <p className="font-bold text-lg">
-            {winner === 'draw' ? "It's a draw!" : `${winner === 'black' ? '🟢' : '⚪'} ${winner.charAt(0).toUpperCase() + winner.slice(1)} wins!`}
+            {winner === 'draw' ? "It's a draw!" : `${winner === 'black' ? '🟢' : '⚪'} ${winner === 'black' ? 'Teal' : 'White'} wins!`}
           </p>
         ) : (
           <p className="text-sm font-medium">
-            {currentTurn === 'black' ? '🟢' : '⚪'} {currentTurn}'s turn
+            {currentTurn === 'black' ? '🟢' : '⚪'} {currentTurn === 'black' ? 'Teal' : 'White'}'s turn
             {mode === 'online' && currentTurn === myColor && ' (you)'}
             {mode === 'online' && currentTurn !== myColor && ' (waiting...)'}
           </p>

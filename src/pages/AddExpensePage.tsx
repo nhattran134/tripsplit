@@ -33,6 +33,7 @@ export function AddExpensePage() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [paidBy, setPaidBy] = useState('')
+  const [paidFrom, setPaidFrom] = useState<'pool' | 'pocket'>('pool')
   const [splitType, setSplitType] = useState<'equal' | 'custom' | 'specific'>('equal')
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
@@ -101,6 +102,7 @@ export function AddExpensePage() {
         description: description.trim(),
         date,
         split_type: splitType,
+        paid_from: paidFrom,
       })
       if (expError) throw new Error(expError.message)
 
@@ -257,6 +259,36 @@ export function AddExpensePage() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Paid From */}
+      <div>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Paid from</label>
+        <div className="mt-1 flex gap-2">
+          <button
+            onClick={() => setPaidFrom('pool')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
+              paidFrom === 'pool'
+                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                : 'border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            💰 Pool
+          </button>
+          <button
+            onClick={() => setPaidFrom('pocket')}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
+              paidFrom === 'pocket'
+                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
+                : 'border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            👛 Own pocket
+          </button>
+        </div>
+        <p className="text-[10px] text-slate-400 mt-1">
+          {paidFrom === 'pool' ? 'Paid using group deposits' : 'Paid from personal money (will be reimbursed)'}
+        </p>
       </div>
 
       {/* Split Type */}

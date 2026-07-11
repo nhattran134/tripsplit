@@ -296,6 +296,18 @@ export function HomePage() {
         </div>
       </div>
 
+      {/* Play Games (outside trips) */}
+      <button
+        onClick={() => navigate('/play/new')}
+        className="w-full flex items-center gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors"
+      >
+        <span className="text-2xl">🎮</span>
+        <div className="text-left">
+          <p className="font-semibold text-sm">Play Games</p>
+          <p className="text-xs text-slate-500">Create a game room and invite anyone</p>
+        </div>
+      </button>
+
       {/* Trip List */}
       {myTrips.length === 0 ? (
         <div className="text-center py-12 text-slate-500">
@@ -314,7 +326,7 @@ export function HomePage() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85dvh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85vh] overflow-y-auto">
             <h2 className="text-xl font-bold">{t('trip.create')}</h2>
 
             <div>
@@ -390,7 +402,7 @@ export function HomePage() {
       {/* Join by Code Modal */}
       {showJoin && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85dvh] overflow-y-auto">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85vh] overflow-y-auto">
             <h2 className="text-xl font-bold">{t('join.title')}{joinTrip ? `: ${joinTrip.name}` : ''}</h2>
 
             {/* Step 1: Enter code */}

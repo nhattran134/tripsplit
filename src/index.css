@@ -89,7 +89,7 @@ input[type="date"]::-webkit-date-and-time-value {
 }
 
 /* Prevent horizontal scroll on mobile */
-main {
+html {
   overflow-x: hidden;
 }
 
@@ -149,8 +149,10 @@ main {
 }
 
 /* Apply animations - fast and subtle */
+/* Note: transform in animations creates containing blocks that break position:fixed */
+/* So we only animate opacity, not transform, on containers that have fixed children */
 main > div {
-  animation: fadeUp 0.2s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 /* Cards - staggered entrance */

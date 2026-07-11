@@ -48,6 +48,7 @@ export interface Expense {
   description: string
   date: string
   split_type: 'equal' | 'custom' | 'specific'
+  paid_from: 'pool' | 'pocket'
   created_at: string
   deleted_at: string | null
   version: number

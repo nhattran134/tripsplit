@@ -2,10 +2,12 @@ import type { Member, Deposit, Expense, ExpenseSplit, Settlement, BalanceEntry, 
 
 /**
  * Calculate net balance per member.
- * net > 0: member overpaid (is owed money / gets refund)
- * net < 0: member underpaid (owes money to pool)
+ * net > 0: member deposited more than their share (gets refund)
+ * net < 0: member deposited less than their share (owes more)
  *
- * Formula: net = deposits + expenses_I_paid - my_share_of_all_expenses - settlements_received + settlements_paid
+ * Two expense types:
+ * - paid_from='pool': paid from shared deposits, payer gets no credit
+ * - paid_from='pocket': paid from own money, payer gets credit (like Splitwise)
  */
 export function calculateBalances(
   members: Member[],
@@ -30,11 +32,13 @@ export function calculateBalances(
     balanceMap.set(deposit.member_id, current + deposit.amount * deposit.rate_to_base)
   }
 
-  // Credit expense payers (they paid on behalf of the group)
+  // Credit payers who paid from their own pocket (not from pool)
   for (const expense of expenses) {
     if (expense.deleted_at) continue
-    const current = balanceMap.get(expense.member_id) ?? 0
-    balanceMap.set(expense.member_id, current + expense.amount * expense.rate_to_base)
+    if (expense.paid_from === 'pocket') {
+      const current = balanceMap.get(expense.member_id) ?? 0
+      balanceMap.set(expense.member_id, current + expense.amount * expense.rate_to_base)
+    }
   }
 
   // Subtract expense shares (money member BENEFITED from)

@@ -12,6 +12,8 @@ const SettleUpPage = lazy(() => import('@/pages/SettleUpPage').then(m => ({ defa
 const HistoryPage = lazy(() => import('@/pages/HistoryPage').then(m => ({ default: m.HistoryPage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ default: m.SettingsPage })))
 const GomokuPage = lazy(() => import('@/pages/GomokuPage').then(m => ({ default: m.GomokuPage })))
+const GameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.GameRoomPage })))
+const CreateGameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.CreateGameRoomPage })))
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -44,4 +46,6 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '/t/:inviteCode', element: <SuspenseWrapper><JoinTripPage /></SuspenseWrapper> },
+  { path: '/play/new', element: <SuspenseWrapper><CreateGameRoomPage /></SuspenseWrapper> },
+  { path: '/play/:roomCode', element: <SuspenseWrapper><GameRoomPage /></SuspenseWrapper> },
 ])
