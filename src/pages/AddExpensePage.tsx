@@ -52,13 +52,25 @@ export function AddExpensePage() {
     },
   })
 
+  const { data: currentSession } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession()
+      return data.session
+    },
+  })
+  const currentAuthUid = currentSession?.user?.id
+
   const { data: members = [] } = useQuery({
     queryKey: ['members', tripId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('members').select('*').eq('trip_id', tripId).is('deleted_at', null)
       if (error) throw error
-      if (!paidBy && data.length > 0) setPaidBy(data[0].id)
+      if (!paidBy && data.length > 0) {
+        const myMember = data.find((m: Member) => m.auth_uid === currentAuthUid)
+        setPaidBy(myMember?.id || data[0].id)
+      }
       if (selectedMembers.length === 0) setSelectedMembers(data.map((m: Member) => m.id))
       return data as Member[]
     },
@@ -138,8 +150,9 @@ export function AddExpensePage() {
       const numAmount = parseFloat(amount)
       if (!numAmount || numAmount <= 0) throw new Error('Enter a valid amount')
       if (!paidBy && paidFrom === 'pocket') throw new Error('Select who paid')
-      // For pool expenses, auto-assign first member as payer (it's just record-keeping)
-      const actualPayer = paidBy || members[0]?.id
+      // For pool expenses, use current user as record-keeper (not first member in array)
+      const myMember = members.find(m => m.auth_uid === currentAuthUid)
+      const actualPayer = paidBy || myMember?.id || members[0]?.id
       if (!actualPayer) throw new Error('No members found')
 
       // For equal split, always use all members; for specific/custom, use selection

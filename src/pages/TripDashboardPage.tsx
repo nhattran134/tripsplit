@@ -149,15 +149,18 @@ export function TripDashboardPage() {
     if (!tripId) return
     const channel = supabase.channel(`trip-${tripId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
-        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-        // Show toast for new expenses from other users
         const newExp = payload.new as any
-        if (newExp && newExp.member_id) {
-          const expMember = members.find(m => m.id === newExp.member_id)
-          if (expMember && expMember.auth_uid !== currentAuthUid) {
-            showToast(t('notification.newExpense', { name: expMember.name, desc: newExp.description || newExp.category || '' }))
-          }
+        // Skip invalidation for own inserts (already handled by mutation onSuccess)
+        const expMember = members.find(m => m.id === newExp?.member_id)
+        if (expMember && expMember.auth_uid === currentAuthUid) return
+        // Delay to let splits insert complete before refetching
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
+          queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
+        }, 500)
+        // Show toast for new expenses from other users
+        if (expMember) {
+          showToast(t('notification.newExpense', { name: expMember.name, desc: newExp.description || newExp.category || '' }))
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
@@ -165,13 +168,12 @@ export function TripDashboardPage() {
         queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
       })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, (payload) => {
-        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
         const newDep = payload.new as any
-        if (newDep && newDep.member_id) {
-          const depMember = members.find(m => m.id === newDep.member_id)
-          if (depMember && depMember.auth_uid !== currentAuthUid) {
-            showToast(t('notification.newDeposit', { name: depMember.name }))
-          }
+        const depMember = members.find(m => m.id === newDep?.member_id)
+        if (depMember && depMember.auth_uid === currentAuthUid) return
+        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+        if (depMember) {
+          showToast(t('notification.newDeposit', { name: depMember.name }))
         }
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
