@@ -220,13 +220,12 @@ export function AddExpensePage() {
         await supabase.from('expenses').update({ receipt_url: urlData.publicUrl }).eq('id', expenseId)
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       submittingRef.current = false
-      // Remove cached queries entirely to force fresh fetch on next page
-      queryClient.removeQueries({ queryKey: ['expenses', tripId] })
-      queryClient.removeQueries({ queryKey: ['expense_splits', tripId] })
-      queryClient.removeQueries({ queryKey: ['deposits', tripId] })
-      queryClient.removeQueries({ queryKey: ['recent-expenses', tripId] })
+      // Wait for fresh data before navigating
+      await queryClient.refetchQueries({ queryKey: ['expenses', tripId] })
+      await queryClient.refetchQueries({ queryKey: ['expense_splits', tripId] })
+      await queryClient.refetchQueries({ queryKey: ['deposits', tripId] })
       navigate(`/trip/${tripId}`)
     },
     onError: (e) => {

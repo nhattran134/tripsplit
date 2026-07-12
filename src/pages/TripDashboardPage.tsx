@@ -143,31 +143,20 @@ export function TripDashboardPage() {
   })
   const currentAuthUid = currentSession?.user?.id
 
-  // Real-time sync: invalidate queries when data changes
+  // Real-time sync: invalidate queries when data changes from OTHER devices
   useEffect(() => {
     if (!tripId) return
     const channel = supabase.channel(`trip-${tripId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
-        // Delay invalidation to let splits insert complete
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
-          queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-        }, 1000)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
+        // Only invalidate — don't refetch. Data will refresh on next navigation.
+        queryClient.invalidateQueries({ queryKey: ['expenses', tripId], refetchType: 'none' })
+        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId], refetchType: 'none' })
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
-        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
-        setTimeout(() => {
-          queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
-        }, 500)
-      })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['deposits', tripId], refetchType: 'none' })
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
+        queryClient.invalidateQueries({ queryKey: ['settlements', tripId], refetchType: 'none' })
       })
       .subscribe()
 
