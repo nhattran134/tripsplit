@@ -261,7 +261,7 @@ export function TripDashboardPage() {
               }
 
               return [...groupMap.values()]
-                .filter(g => g.deposited > 0 || g.spent > 0)
+                .filter(g => g.deposited > 0)
                 .map(g => {
                   const share = totalDeposits > 0 ? (g.deposited / totalDeposits) * poolBalance : 0
                   const remaining = g.deposited - g.spent
