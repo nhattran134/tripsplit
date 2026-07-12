@@ -109,7 +109,11 @@
     "copyLink": "📋 Copy personal invite link",
     "memberName": "Member name",
     "chooseAvatar": "Choose your avatar",
-    "noMembers": "No members"
+    "noMembers": "No members",
+    "poolSurplus": "Unspent Pool Money",
+    "poolSurplusHint": "Pool deposits exceed expenses — depositors get the remainder back",
+    "groupBalances": "Group Balances",
+    "groupBalancesHint": "Settlements only happen between groups, not within"
   },
   "settle": {
     "title": "Settle Up",

@@ -50,6 +50,8 @@ export function calculateBalances(
   // Account for settlements already made
   for (const settlement of settlements) {
     if (settlement.deleted_at) continue
+    // Self-settlement is a no-op (would corrupt balance due to stale read)
+    if (settlement.from_member_id === settlement.to_member_id) continue
     const fromBal = balanceMap.get(settlement.from_member_id) ?? 0
     const toBal = balanceMap.get(settlement.to_member_id) ?? 0
     // from_member paid to_member, so from's debt decreases, to's credit decreases

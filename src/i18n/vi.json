@@ -109,7 +109,11 @@
     "copyLink": "📋 Sao chép link mời cá nhân",
     "memberName": "Tên thành viên",
     "chooseAvatar": "Chọn hình đại diện",
-    "noMembers": "Chưa có thành viên"
+    "noMembers": "Chưa có thành viên",
+    "poolSurplus": "Tiền quỹ chưa dùng",
+    "poolSurplusHint": "Quỹ nạp nhiều hơn chi - người nạp được hoàn lại phần dư",
+    "groupBalances": "Số dư theo nhóm",
+    "groupBalancesHint": "Thanh toán chỉ xảy ra giữa các nhóm, không trong cùng nhóm"
   },
   "settle": {
     "title": "Thanh toán",
