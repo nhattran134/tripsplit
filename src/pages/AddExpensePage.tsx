@@ -100,7 +100,16 @@ export function AddExpensePage() {
     },
   })
   const poolSpent = poolExpensesData.reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
-  const poolRemaining = poolTotal - poolSpent
+
+  const { data: viaPoolTotal = 0 } = useQuery({
+    queryKey: ['via-pool-settlements', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('settlements').select('amount').eq('trip_id', tripId).eq('method', 'via_pool').is('deleted_at', null)
+      if (error) throw error
+      return (data || []).reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
+    },
+  })
+  const poolRemaining = poolTotal - poolSpent - viaPoolTotal
 
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses-count', tripId],

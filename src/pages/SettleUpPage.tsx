@@ -167,6 +167,9 @@ export function SettleUpPage() {
 
   const hasIntraGroupDebts = intraGroupTransfers.length > 0
   const baseCurrency = trip?.base_currency || 'VND'
+  const poolBalance = deposits.reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+    - expenses.filter(e => e.paid_from === 'pool').reduce((s, e) => s + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+    - settlements.filter(s => s.method === 'via_pool' && !s.deleted_at).reduce((s, st) => s + (Number(st.amount) || 0), 0)
 
   // Pool surplus calculation for refund
   const poolSurplus = useMemo(() => {
@@ -354,11 +357,18 @@ export function SettleUpPage() {
                   </button>
                 </div>
 
-                {/* Via pool explanation */}
+                {/* Via pool explanation + warning */}
                 {method === 'via_pool' && (
-                  <p className="mt-2 text-[10px] text-slate-500 dark:text-slate-400 italic">
-                    {t('settle.viaPoolHint')}
-                  </p>
+                  <div className="mt-2">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 italic">
+                      {t('settle.viaPoolHint')} ({t('dashboard.pool')}: {formatCurrency(poolBalance, baseCurrency)})
+                    </p>
+                    {displayAmount > poolBalance && poolBalance >= 0 && (
+                      <p className="mt-1 text-[11px] text-amber-600 dark:text-amber-400">
+                        ⚠️ {t('settle.poolInsufficient', { amount: formatCurrency(poolBalance, baseCurrency) })}
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 <button
