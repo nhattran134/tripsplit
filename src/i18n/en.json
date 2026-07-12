@@ -55,7 +55,11 @@
     "games": "Games",
     "gomoku": "Gomoku",
     "gomokuDesc": "5-in-a-row • Play with your group",
-    "spendingByCategory": "Spending by Category"
+    "spendingByCategory": "Spending by Category",
+    "poolShare": "Pool Share",
+    "poolShareHint": "How much of the pool each group/person has left",
+    "poolDeposited": "put in",
+    "poolLeft": "left"
   },
   "expense": {
     "title": "Add Expense",

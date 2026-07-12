@@ -253,6 +253,67 @@ export function TripDashboardPage() {
         </div>
       </div>
 
+      {/* Pool Share Breakdown */}
+      {poolBalance > 0 && totalDeposits > 0 && (
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <h2 className="font-semibold mb-1 text-sm">{t('dashboard.poolShare')}</h2>
+          <p className="text-[10px] text-slate-500 mb-3">{t('dashboard.poolShareHint')}</p>
+          <div className="space-y-2">
+            {(() => {
+              // Group members by group_id
+              const groupMap = new Map<string, { name: string; deposited: number; spent: number }>()
+              const activeMembers = members.filter(m => !m.deleted_at)
+              
+              for (const m of activeMembers) {
+                const key = m.group_id || `solo_${m.id}`
+                const existing = groupMap.get(key)
+                const memberDeposits = deposits.filter(d => d.member_id === m.id)
+                  .reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+                const memberPoolShares = expenseSplits
+                  .filter(s => s.member_id === m.id && expenses.find(e => e.id === s.expense_id && e.paid_from === 'pool'))
+                  .reduce((sum, s) => sum + (Number(s.share_amount) || 0), 0)
+                
+                if (existing) {
+                  existing.deposited += memberDeposits
+                  existing.spent += memberPoolShares
+                } else {
+                  // Find group partner names
+                  const groupMembers = m.group_id 
+                    ? activeMembers.filter(om => om.group_id === m.group_id).map(om => om.name)
+                    : [m.name]
+                  groupMap.set(key, { name: groupMembers.join(' & '), deposited: memberDeposits, spent: memberPoolShares })
+                }
+              }
+
+              return [...groupMap.values()]
+                .filter(g => g.deposited > 0 || g.spent > 0)
+                .map(g => {
+                  const share = totalDeposits > 0 ? (g.deposited / totalDeposits) * poolBalance : 0
+                  const remaining = g.deposited - g.spent
+                  return { ...g, share, remaining }
+                })
+                .sort((a, b) => b.remaining - a.remaining)
+                .map((g) => (
+                  <div key={g.name} className="flex items-center justify-between text-sm">
+                    <div>
+                      <span className="font-medium">{g.name}</span>
+                      <span className="text-[10px] text-slate-400 ml-1.5">
+                        {t('dashboard.poolDeposited')}: {formatAmount(g.deposited, trip.base_currency)}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className={`font-semibold ${g.remaining > 0 ? 'text-indigo-600' : 'text-slate-400'}`}>
+                        {formatAmount(g.remaining, trip.base_currency)}
+                      </span>
+                      <span className="text-[10px] text-slate-400 ml-1">{t('dashboard.poolLeft')}</span>
+                    </div>
+                  </div>
+                ))
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* Member Balances */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
         <h2 className="font-semibold mb-3">{t('dashboard.memberBalances')}</h2>

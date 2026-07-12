@@ -55,7 +55,11 @@
     "games": "Trò chơi",
     "gomoku": "Gomoku",
     "gomokuDesc": "5 liên tiếp - Chơi cùng nhóm",
-    "spendingByCategory": "Chi tiêu theo loại"
+    "spendingByCategory": "Chi tiêu theo loại",
+    "poolShare": "Phần quỹ",
+    "poolShareHint": "Mỗi nhóm/người còn bao nhiêu trong quỹ",
+    "poolDeposited": "đã nạp",
+    "poolLeft": "còn lại"
   },
   "expense": {
     "title": "Thêm chi tiêu",
