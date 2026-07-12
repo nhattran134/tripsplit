@@ -152,6 +152,7 @@
     "reasonShare": "share of expenses",
     "poolInsufficient": "Pool only has {{amount}} — not enough for this settlement via pool",
     "viaPoolHint": "Settled through the group pool — no cash exchange needed",
+    "noPoolCredit": "No pool credit — this group didn't deposit enough",
     "poolSurplus": "Pool Surplus",
     "poolSurplusHint": "Leftover from group pool - refund to depositors",
     "refundAmount": "Refund"

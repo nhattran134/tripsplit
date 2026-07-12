@@ -345,16 +345,34 @@ export function SettleUpPage() {
                   >
                     {t('settle.direct')}
                   </button>
-                  <button
-                    onClick={() => setSettleMethods({ ...settleMethods, [index]: 'via_pool' })}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${
-                      method === 'via_pool'
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
-                    }`}
-                  >
-                    {t('settle.viaPool')}
-                  </button>
+                  {(() => {
+                    // Debtor's pool credit = their deposits - their pool expense shares
+                    const fromMembers = transfer.from.group_id
+                      ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
+                      : [transfer.from]
+                    const debtorDeposits = fromMembers.reduce((s, m) => s + deposits.filter(d => d.member_id === m.id).reduce((ds, d) => ds + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0), 0)
+                    const debtorPoolShares = fromMembers.reduce((s, m) => s + expenseSplits.filter(sp => sp.member_id === m.id && expenses.find(e => e.id === sp.expense_id && e.paid_from === 'pool')).reduce((ss, sp) => ss + (Number(sp.share_amount) || 0), 0), 0)
+                    const debtorPoolCredit = debtorDeposits - debtorPoolShares
+                    const canUsePool = debtorPoolCredit > 0
+
+                    return (
+                      <button
+                        onClick={() => canUsePool && setSettleMethods({ ...settleMethods, [index]: 'via_pool' })}
+                        disabled={!canUsePool}
+                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${
+                          !canUsePool
+                            ? 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600 opacity-50 cursor-not-allowed'
+                            : method === 'via_pool'
+                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                              : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                        }`}
+                        title={!canUsePool ? t('settle.noPoolCredit') : ''}
+                      >
+                        {t('settle.viaPool')}
+                        {canUsePool && <span className="block text-[9px] text-slate-400">({formatCurrency(debtorPoolCredit, baseCurrency)})</span>}
+                      </button>
+                    )
+                  })()}
                 </div>
 
                 {/* Via pool explanation + warning */}
