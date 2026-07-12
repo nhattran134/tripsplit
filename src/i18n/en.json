@@ -147,6 +147,9 @@
     "methodViaPool": "via pool",
     "intraGroup": "Within-group settlements",
     "intraGroupHint": "These are private — settle between yourselves",
+    "reasonDeposited": "deposited",
+    "reasonPaid": "paid (pocket)",
+    "reasonShare": "share of expenses",
     "poolSurplus": "Pool Surplus",
     "poolSurplusHint": "Leftover from group pool - refund to depositors",
     "refundAmount": "Refund"

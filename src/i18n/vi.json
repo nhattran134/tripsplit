@@ -147,6 +147,9 @@
     "methodViaPool": "qua quỹ",
     "intraGroup": "Thanh toán nội bộ nhóm",
     "intraGroupHint": "Riêng tư — tự thanh toán với nhau trong nhóm",
+    "reasonDeposited": "đã nạp",
+    "reasonPaid": "đã trả (túi riêng)",
+    "reasonShare": "phần chi tiêu",
     "poolSurplus": "Dư quỹ",
     "poolSurplusHint": "Tiền dư từ quỹ chung - hoàn lại cho người nạp",
     "refundAmount": "Hoàn lại"

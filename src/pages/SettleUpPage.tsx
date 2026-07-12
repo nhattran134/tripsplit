@@ -282,6 +282,42 @@ export function SettleUpPage() {
                   </span>
                 </p>
 
+                {/* Reason breakdown */}
+                <div className="mt-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 text-[11px] text-slate-600 dark:text-slate-400 space-y-1">
+                  {(() => {
+                    const fromMembers = transfer.from.group_id
+                      ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
+                      : [transfer.from]
+                    const toMembers = transfer.to.group_id
+                      ? members.filter(m => m.group_id === transfer.to.group_id && !m.deleted_at)
+                      : [transfer.to]
+                    
+                    const sumFor = (mems: Member[]) => {
+                      const deposited = mems.reduce((s, m) => s + deposits.filter(d => d.member_id === m.id).reduce((ds, d) => ds + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0), 0)
+                      const pocketCredit = mems.reduce((s, m) => s + expenses.filter(e => e.paid_from === 'pocket' && e.member_id === m.id).reduce((es, e) => es + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0), 0)
+                      const shares = mems.reduce((s, m) => s + expenseSplits.filter(sp => sp.member_id === m.id).reduce((ss, sp) => ss + (Number(sp.share_amount) || 0), 0), 0)
+                      return { deposited, pocketCredit, shares }
+                    }
+
+                    const from = sumFor(fromMembers)
+                    const to = sumFor(toMembers)
+                    const fromGroupName = transfer.from.group_id ? groups.find(g => g.id === transfer.from.group_id)?.name || transfer.from.name : transfer.from.name
+                    const toGroupName = transfer.to.group_id ? groups.find(g => g.id === transfer.to.group_id)?.name || transfer.to.name : transfer.to.name
+
+                    return (
+                      <>
+                        <div className="flex justify-between"><span>{fromGroupName}: {t('settle.reasonDeposited')}</span><span>{formatCurrency(from.deposited, baseCurrency)}</span></div>
+                        {from.pocketCredit > 0 && <div className="flex justify-between"><span>{fromGroupName}: {t('settle.reasonPaid')}</span><span>{formatCurrency(from.pocketCredit, baseCurrency)}</span></div>}
+                        <div className="flex justify-between"><span>{fromGroupName}: {t('settle.reasonShare')}</span><span>-{formatCurrency(from.shares, baseCurrency)}</span></div>
+                        <div className="border-t border-slate-200 dark:border-slate-600 my-1"></div>
+                        <div className="flex justify-between"><span>{toGroupName}: {t('settle.reasonDeposited')}</span><span>{formatCurrency(to.deposited, baseCurrency)}</span></div>
+                        {to.pocketCredit > 0 && <div className="flex justify-between"><span>{toGroupName}: {t('settle.reasonPaid')}</span><span>{formatCurrency(to.pocketCredit, baseCurrency)}</span></div>}
+                        <div className="flex justify-between"><span>{toGroupName}: {t('settle.reasonShare')}</span><span>-{formatCurrency(to.shares, baseCurrency)}</span></div>
+                      </>
+                    )
+                  })()}
+                </div>
+
                 {/* Editable settlement amount (Fix 2.6) */}
                 <div className="mt-3">
                   <label className="text-xs text-slate-500">{t('settle.amountToSettle')}</label>
