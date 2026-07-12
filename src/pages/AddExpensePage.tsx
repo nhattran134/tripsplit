@@ -222,9 +222,12 @@ export function AddExpensePage() {
     },
     onSuccess: () => {
       submittingRef.current = false
+      // Refetch queries and wait briefly before navigating
+      // This prevents stale/partial data flash on the target page
       queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
       queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-      navigate(`/trip/${tripId}`)
+      queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      setTimeout(() => navigate(`/trip/${tripId}`), 300)
     },
     onError: (e) => {
       submittingRef.current = false

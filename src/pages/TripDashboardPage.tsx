@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Settings, Receipt, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Avatar } from '@/components/common/Avatar'
-import { showToast } from '@/components/common/Toast'
 import { useAppStore } from '@/lib/store'
 import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency, formatAmount } from '@/lib/currency'
@@ -148,33 +147,21 @@ export function TripDashboardPage() {
   useEffect(() => {
     if (!tripId) return
     const channel = supabase.channel(`trip-${tripId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, (payload) => {
-        const newExp = payload.new as any
-        // Skip invalidation for own inserts (already handled by mutation onSuccess)
-        const expMember = members.find(m => m.id === newExp?.member_id)
-        if (expMember && expMember.auth_uid === currentAuthUid) return
-        // Delay to let splits insert complete before refetching
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
+        // Delay invalidation to let splits insert complete
         setTimeout(() => {
           queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
           queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-        }, 500)
-        // Show toast for new expenses from other users
-        if (expMember) {
-          showToast(t('notification.newExpense', { name: expMember.name, desc: newExp.description || newExp.category || '' }))
-        }
+        }, 1000)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
         queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
       })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, (payload) => {
-        const newDep = payload.new as any
-        const depMember = members.find(m => m.id === newDep?.member_id)
-        if (depMember && depMember.auth_uid === currentAuthUid) return
-        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
-        if (depMember) {
-          showToast(t('notification.newDeposit', { name: depMember.name }))
-        }
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+        }, 500)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
         queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
@@ -185,8 +172,7 @@ export function TripDashboardPage() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [tripId, queryClient, members, currentAuthUid, t])
-
+  }, [tripId, queryClient])
   const totalDeposits = useMemo(
     () => deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0),
     [deposits]
