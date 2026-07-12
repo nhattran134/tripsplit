@@ -79,6 +79,15 @@ export function SettleUpPage() {
     },
   })
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['member-groups', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('member_groups').select('*').eq('trip_id', tripId)
+      if (error) throw error
+      return data as { id: string; name: string }[]
+    },
+  })
+
   const settleMutation = useMutation({
     mutationFn: async (params: { from: Member; to: Member; amount: number; method: 'direct' | 'via_pool' }) => {
       const { error } = await supabase.from('settlements').insert({
@@ -225,14 +234,52 @@ export function SettleUpPage() {
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={32} />
-                    <span className="text-sm">→</span>
-                    <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={32} />
+                    {(() => {
+                      const fromGroup = transfer.from.group_id
+                        ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
+                        : [transfer.from]
+                      const toGroup = transfer.to.group_id
+                        ? members.filter(m => m.group_id === transfer.to.group_id && !m.deleted_at)
+                        : [transfer.to]
+                      const fromGroupName = transfer.from.group_id
+                        ? groups.find(g => g.id === transfer.from.group_id)?.name || fromGroup.map(m => m.name).join(' & ')
+                        : transfer.from.name
+                      const toGroupName = transfer.to.group_id
+                        ? groups.find(g => g.id === transfer.to.group_id)?.name || toGroup.map(m => m.name).join(' & ')
+                        : transfer.to.name
+                      return (
+                        <>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <div className="flex -space-x-1.5">
+                              {fromGroup.map(m => <Avatar key={m.id} name={m.name} style={m.avatar_style} seed={m.avatar_seed} size={26} />)}
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{fromGroupName}</span>
+                          </div>
+                          <span className="text-sm text-slate-400">→</span>
+                          <div className="flex flex-col items-center gap-0.5">
+                            <div className="flex -space-x-1.5">
+                              {toGroup.map(m => <Avatar key={m.id} name={m.name} style={m.avatar_style} seed={m.avatar_seed} size={26} />)}
+                            </div>
+                            <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{toGroupName}</span>
+                          </div>
+                        </>
+                      )
+                    })()}
                   </div>
                   <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
                 </div>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  <span className="font-medium">{transfer.from.name}</span> {t('settle.pays')} <span className="font-medium">{transfer.to.name}</span>
+                  <span className="font-medium">
+                    {transfer.from.group_id
+                      ? groups.find(g => g.id === transfer.from.group_id)?.name || members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at).map(m => m.name).join(' & ')
+                      : transfer.from.name}
+                  </span>
+                  {' '}{t('settle.pays')}{' '}
+                  <span className="font-medium">
+                    {transfer.to.group_id
+                      ? groups.find(g => g.id === transfer.to.group_id)?.name || members.filter(m => m.group_id === transfer.to.group_id && !m.deleted_at).map(m => m.name).join(' & ')
+                      : transfer.to.name}
+                  </span>
                 </p>
 
                 {/* Editable settlement amount (Fix 2.6) */}
