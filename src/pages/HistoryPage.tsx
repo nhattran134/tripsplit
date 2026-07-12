@@ -200,7 +200,7 @@ export function HistoryPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{item.label}</p>
                     <p className="text-xs text-slate-500">
-                      {item.sublabel || item.member?.name} • {new Date(item.date).toLocaleDateString()}
+                      {item.sublabel || item.member?.name} • {item.date ? new Date(item.date).toLocaleDateString() : ''}
                     </p>
                   </div>
                 </div>
@@ -247,7 +247,7 @@ export function HistoryPage() {
                     )}
                   </div>
                   <p className="text-slate-500">
-                    {item.member?.name && `${t('history.by')}: ${item.member.name}`} • {new Date(item.date).toLocaleString()}
+                    {item.member?.name && `${t('history.by')}: ${item.member.name}`} • {item.date ? new Date(item.date).toLocaleString() : ''}
                   </p>
                   {/* Receipt */}
                   {item.receipt_url && (

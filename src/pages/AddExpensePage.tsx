@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -68,8 +68,8 @@ export function AddExpensePage() {
         .from('members').select('*').eq('trip_id', tripId).is('deleted_at', null)
       if (error) throw error
       if (!paidBy && data.length > 0) {
-        const myMember = data.find((m: Member) => m.auth_uid === currentAuthUid)
-        setPaidBy(myMember?.id || data[0].id)
+        // Will be overridden by useEffect once session loads
+        setPaidBy(data[0].id)
       }
       if (selectedMembers.length === 0) setSelectedMembers(data.map((m: Member) => m.id))
       return data as Member[]
@@ -123,6 +123,14 @@ export function AddExpensePage() {
       return data as (Expense & { expense_splits: { member_id: string }[] })[]
     },
   })
+
+  // Set paidBy to current user once session is available
+  useEffect(() => {
+    if (currentAuthUid && members.length > 0) {
+      const myMember = members.find(m => m.auth_uid === currentAuthUid)
+      if (myMember) setPaidBy(myMember.id)
+    }
+  }, [currentAuthUid, members])
 
   // Feature 3: Compute weights based on group membership
   const groupWeights = useMemo(() => {
