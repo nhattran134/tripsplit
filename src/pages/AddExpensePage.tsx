@@ -77,7 +77,7 @@ export function AddExpensePage() {
   })
 
   const { data: deposits = [] } = useQuery({
-    queryKey: ['deposits', tripId],
+    queryKey: ['deposits-pool-total', tripId],
     queryFn: async () => {
       const { data, error } = await supabase.from('deposits').select('amount, rate_to_base').eq('trip_id', tripId).is('deleted_at', null)
       if (error) throw error
