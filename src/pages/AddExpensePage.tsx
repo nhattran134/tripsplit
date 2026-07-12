@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +38,7 @@ export function AddExpensePage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
+  const submittingRef = useRef(false)
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -63,6 +64,9 @@ export function AddExpensePage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (submittingRef.current) return
+      submittingRef.current = true
+
       const numAmount = parseFloat(amount)
       if (!numAmount || numAmount <= 0) throw new Error('Enter a valid amount')
       if (!paidBy) throw new Error('Select who paid')
@@ -116,11 +120,15 @@ export function AddExpensePage() {
       if (splitError) throw new Error(splitError.message)
     },
     onSuccess: () => {
+      submittingRef.current = false
       queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
       queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
       navigate(`/trip/${tripId}`)
     },
-    onError: (e) => setError(e instanceof Error ? e.message : 'Failed to add expense'),
+    onError: (e) => {
+      submittingRef.current = false
+      setError(e instanceof Error ? e.message : 'Failed to add expense')
+    },
   })
 
   const baseCurrency = trip?.base_currency || 'VND'
@@ -354,7 +362,7 @@ export function AddExpensePage() {
 
       <button
         onClick={() => mutation.mutate()}
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || submittingRef.current}
         className="w-full py-3 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
       >
         {mutation.isPending ? t('expense.saving') : t('expense.addButton')}

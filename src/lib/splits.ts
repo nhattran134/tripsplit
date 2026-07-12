@@ -6,29 +6,40 @@ export interface SplitResult {
 }
 
 /**
- * Calculate equal split with remainder handling.
+ * Calculate equal (or weighted) split with remainder handling.
  * Remainder is assigned to the first member to ensure sum === baseAmount exactly.
+ * If weights are provided, each member's share is proportional to their weight.
  */
 export function calculateEqualSplit(
   baseAmount: number,
   memberIds: string[],
-  baseCurrency: string
+  baseCurrency: string,
+  weights?: Record<string, number> // optional: member_id -> weight (default 1)
 ): SplitResult[] {
   if (memberIds.length === 0) return []
 
   const decimals = getCurrencyDecimals(baseCurrency)
   const factor = Math.pow(10, decimals)
-  const count = memberIds.length
 
-  // Floor division to avoid over-allocation
-  const perPerson = Math.floor(baseAmount * factor / count) / factor
-  const totalAllocated = Math.round(perPerson * count * factor) / factor
+  // Calculate total weight
+  const totalWeight = memberIds.reduce((sum, id) => sum + (weights?.[id] ?? 1), 0)
+  if (totalWeight === 0) return []
+
+  // Calculate weighted shares
+  const results: SplitResult[] = memberIds.map((memberId) => {
+    const weight = weights?.[memberId] ?? 1
+    const share = Math.floor((baseAmount * weight / totalWeight) * factor) / factor
+    return { member_id: memberId, share_amount: share }
+  })
+
+  // Handle remainder - assign to first member
+  const totalAllocated = results.reduce((sum, r) => sum + r.share_amount, 0)
   const remainder = Math.round((baseAmount - totalAllocated) * factor) / factor
+  if (results.length > 0 && remainder > 0) {
+    results[0].share_amount = Math.round((results[0].share_amount + remainder) * factor) / factor
+  }
 
-  return memberIds.map((memberId, index) => ({
-    member_id: memberId,
-    share_amount: index === 0 ? Math.round((perPerson + remainder) * factor) / factor : perPerson,
-  }))
+  return results
 }
 
 /**

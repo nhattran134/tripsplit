@@ -32,6 +32,22 @@ describe('calculateEqualSplit', () => {
     const result = calculateEqualSplit(100, ['a'], 'USD')
     expect(result[0].share_amount).toBe(100)
   })
+
+  it('splits by weight (couple = 0.5 each)', () => {
+    const weights = { a: 0.5, b: 0.5, c: 1, d: 1 }
+    const result = calculateEqualSplit(300, ['a', 'b', 'c', 'd'], 'USD', weights)
+    // Total weight = 3, so: a=50, b=50, c=100, d=100
+    expect(result.find(r => r.member_id === 'a')?.share_amount).toBe(50)
+    expect(result.find(r => r.member_id === 'b')?.share_amount).toBe(50)
+    expect(result.find(r => r.member_id === 'c')?.share_amount).toBe(100)
+    expect(result.find(r => r.member_id === 'd')?.share_amount).toBe(100)
+    expect(result.reduce((s, r) => s + r.share_amount, 0)).toBe(300)
+  })
+
+  it('defaults to equal weight when no weights provided', () => {
+    const result = calculateEqualSplit(100, ['a', 'b', 'c', 'd'], 'USD')
+    expect(result.map(r => r.share_amount)).toEqual([25, 25, 25, 25])
+  })
 })
 
 describe('validateCustomSplit', () => {

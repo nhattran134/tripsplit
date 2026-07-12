@@ -68,6 +68,7 @@ export interface Settlement {
   from_member_id: string
   to_member_id: string
   amount: number
+  method: 'direct' | 'via_pool'
   note: string
   created_at: string
   deleted_at: string | null

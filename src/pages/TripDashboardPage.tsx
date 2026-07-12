@@ -146,11 +146,15 @@ export function TripDashboardPage() {
     () => deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0),
     [deposits]
   )
-  const totalExpenses = useMemo(
+  const totalPoolExpenses = useMemo(
+    () => expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0),
+    [expenses]
+  )
+  const totalAllExpenses = useMemo(
     () => expenses.reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0),
     [expenses]
   )
-  const poolBalance = totalDeposits - totalExpenses
+  const poolBalance = totalDeposits - totalPoolExpenses
   const balances = useMemo(
     () => calculateBalances(members, deposits, expenses, expenseSplits, settlements),
     [members, deposits, expenses, expenseSplits, settlements]
@@ -193,7 +197,7 @@ export function TripDashboardPage() {
         <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-3 text-center">
           <p className="text-xs text-red-600 dark:text-red-400 font-medium">{t('dashboard.spent')}</p>
           <p className="text-sm font-bold text-red-700 dark:text-red-300 mt-1">
-            {formatAmount(totalExpenses, trip.base_currency)}
+            {formatAmount(totalAllExpenses, trip.base_currency)}
           </p>
         </div>
         <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 text-center">

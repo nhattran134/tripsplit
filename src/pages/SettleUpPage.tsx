@@ -15,6 +15,8 @@ export function SettleUpPage() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const [settlingIndex, setSettlingIndex] = useState<number | null>(null)
+  const [settleMethods, setSettleMethods] = useState<Record<number, 'direct' | 'via_pool'>>({})
+  const [settleAmounts, setSettleAmounts] = useState<Record<number, string>>({})
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -77,13 +79,14 @@ export function SettleUpPage() {
   })
 
   const settleMutation = useMutation({
-    mutationFn: async (transfer: { from: Member; to: Member; amount: number }) => {
+    mutationFn: async (params: { from: Member; to: Member; amount: number; method: 'direct' | 'via_pool' }) => {
       const { error } = await supabase.from('settlements').insert({
         id: generateId(),
         trip_id: tripId,
-        from_member_id: transfer.from.id,
-        to_member_id: transfer.to.id,
-        amount: transfer.amount,
+        from_member_id: params.from.id,
+        to_member_id: params.to.id,
+        amount: params.amount,
+        method: params.method,
         note: '',
       })
       if (error) throw new Error(error.message)
@@ -135,34 +138,82 @@ export function SettleUpPage() {
           <p className="text-sm text-slate-500">
             {t('settle.transfers', { count: transfers.length })}
           </p>
-          {transfers.map((transfer, index) => (
-            <div
-              key={`${transfer.from.id}-${transfer.to.id}`}
-              className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={32} />
-                  <span className="text-sm">→</span>
-                  <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={32} />
-                </div>
-                <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
-              </div>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                <span className="font-medium">{transfer.from.name}</span> {t('settle.pays')} <span className="font-medium">{transfer.to.name}</span>
-              </p>
-              <button
-                onClick={() => {
-                  setSettlingIndex(index)
-                  settleMutation.mutate(transfer)
-                }}
-                disabled={settleMutation.isPending && settlingIndex === index}
-                className="mt-3 w-full py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 transition-colors"
+          {transfers.map((transfer, index) => {
+            const method = settleMethods[index] || 'direct'
+            const editedAmount = settleAmounts[index]
+            const displayAmount = editedAmount !== undefined ? parseFloat(editedAmount) || 0 : transfer.amount
+
+            return (
+              <div
+                key={`${transfer.from.id}-${transfer.to.id}`}
+                className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700"
               >
-                {settleMutation.isPending && settlingIndex === index ? t('settle.marking') : t('settle.markSettled')}
-              </button>
-            </div>
-          ))}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={32} />
+                    <span className="text-sm">→</span>
+                    <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={32} />
+                  </div>
+                  <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
+                </div>
+                <p className="text-sm text-slate-600 dark:text-slate-400">
+                  <span className="font-medium">{transfer.from.name}</span> {t('settle.pays')} <span className="font-medium">{transfer.to.name}</span>
+                </p>
+
+                {/* Editable settlement amount (Fix 2.6) */}
+                <div className="mt-3">
+                  <label className="text-xs text-slate-500">Amount to settle</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={editedAmount !== undefined ? editedAmount : transfer.amount.toString()}
+                    onChange={(e) => setSettleAmounts({ ...settleAmounts, [index]: e.target.value })}
+                    className="mt-1 w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  />
+                </div>
+
+                {/* Settlement method selector (Fix 1.4) */}
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={() => setSettleMethods({ ...settleMethods, [index]: 'direct' })}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${
+                      method === 'direct'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    💸 Direct
+                  </button>
+                  <button
+                    onClick={() => setSettleMethods({ ...settleMethods, [index]: 'via_pool' })}
+                    className={`flex-1 py-1.5 rounded-lg text-xs font-medium border ${
+                      method === 'via_pool'
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                    }`}
+                  >
+                    💰 Via Pool
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setSettlingIndex(index)
+                    settleMutation.mutate({
+                      from: transfer.from,
+                      to: transfer.to,
+                      amount: displayAmount,
+                      method,
+                    })
+                  }}
+                  disabled={settleMutation.isPending && settlingIndex === index}
+                  className="mt-3 w-full py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 transition-colors"
+                >
+                  {settleMutation.isPending && settlingIndex === index ? t('settle.marking') : t('settle.markSettled')}
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -176,7 +227,10 @@ export function SettleUpPage() {
               const to = members.find((m) => m.id === s.to_member_id)
               return (
                 <div key={s.id} className="flex items-center justify-between py-2 text-sm border-b border-slate-100 dark:border-slate-700">
-                  <span>{from?.name} → {to?.name}</span>
+                  <div>
+                    <span>{from?.name} → {to?.name}</span>
+                    <span className="ml-2 text-xs text-slate-400">({s.method === 'via_pool' ? 'via pool' : 'direct'})</span>
+                  </div>
                   <span className="font-medium">{formatCurrency(Number(s.amount), baseCurrency)}</span>
                 </div>
               )
