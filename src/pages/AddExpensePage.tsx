@@ -89,7 +89,7 @@ export function AddExpensePage() {
   const hasPool = poolTotal > 0
 
   const { data: expenses = [] } = useQuery({
-    queryKey: ['expenses', tripId],
+    queryKey: ['expenses-count', tripId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('expenses').select('id').eq('trip_id', tripId).is('deleted_at', null)
@@ -220,12 +220,13 @@ export function AddExpensePage() {
         await supabase.from('expenses').update({ receipt_url: urlData.publicUrl }).eq('id', expenseId)
       }
     },
-    onSuccess: async () => {
+    onSuccess: () => {
       submittingRef.current = false
-      // Wait for fresh data before navigating
-      await queryClient.refetchQueries({ queryKey: ['expenses', tripId] })
-      await queryClient.refetchQueries({ queryKey: ['expense_splits', tripId] })
-      await queryClient.refetchQueries({ queryKey: ['deposits', tripId] })
+      queryClient.removeQueries({ queryKey: ['expenses', tripId] })
+      queryClient.removeQueries({ queryKey: ['expense_splits', tripId] })
+      queryClient.removeQueries({ queryKey: ['deposits', tripId] })
+      queryClient.removeQueries({ queryKey: ['recent-expenses', tripId] })
+      queryClient.removeQueries({ queryKey: ['expenses-count', tripId] })
       navigate(`/trip/${tripId}`)
     },
     onError: (e) => {
