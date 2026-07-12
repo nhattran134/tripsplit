@@ -132,7 +132,9 @@
     "direct": "💸 Direct",
     "viaPool": "💰 Via Pool",
     "methodDirect": "direct",
-    "methodViaPool": "via pool"
+    "methodViaPool": "via pool",
+    "intraGroup": "Within-group settlements",
+    "intraGroupHint": "These are private — settle between yourselves"
   },
   "history": {
     "title": "History",

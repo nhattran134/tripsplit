@@ -132,7 +132,9 @@
     "direct": "💸 Trực tiếp",
     "viaPool": "💰 Qua quỹ",
     "methodDirect": "trực tiếp",
-    "methodViaPool": "qua quỹ"
+    "methodViaPool": "qua quỹ",
+    "intraGroup": "Thanh toán nội bộ nhóm",
+    "intraGroupHint": "Riêng tư — tự thanh toán với nhau trong nhóm"
   },
   "history": {
     "title": "Lịch sử",

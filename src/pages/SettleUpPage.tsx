@@ -17,6 +17,7 @@ export function SettleUpPage() {
   const [settlingIndex, setSettlingIndex] = useState<number | null>(null)
   const [settleMethods, setSettleMethods] = useState<Record<number, 'direct' | 'via_pool'>>({})
   const [settleAmounts, setSettleAmounts] = useState<Record<number, string>>({})
+  const [showIntraGroup, setShowIntraGroup] = useState(false)
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -108,6 +109,54 @@ export function SettleUpPage() {
     () => simplifyDebts(balances, members),
     [balances, members]
   )
+
+  // Compute intra-group settlements (debts between members of the same group)
+  const intraGroupTransfers = useMemo(() => {
+    const EPSILON = 0.005
+    const groups = new Map<string, Member[]>()
+    for (const m of members) {
+      if (!m.group_id) continue
+      const list = groups.get(m.group_id) || []
+      list.push(m)
+      groups.set(m.group_id, list)
+    }
+
+    const result: { groupName: string; transfers: { from: Member; to: Member; amount: number }[] }[] = []
+
+    for (const [, groupMembers] of groups) {
+      if (groupMembers.length < 2) continue
+
+      // Get individual balances for this group's members
+      const groupBalances = groupMembers.map(m => {
+        const b = balances.find(bal => bal.memberId === m.id)
+        return { member: m, net: b?.net ?? 0 }
+      })
+
+      // Run greedy within this group
+      const creditors = groupBalances.filter(b => b.net >= EPSILON).map(b => ({ ...b })).sort((a, b) => b.net - a.net)
+      const debtors = groupBalances.filter(b => b.net <= -EPSILON).map(b => ({ ...b, net: Math.abs(b.net) })).sort((a, b) => b.net - a.net)
+
+      const groupTransfers: { from: Member; to: Member; amount: number }[] = []
+      let i = 0, j = 0
+      while (i < debtors.length && j < creditors.length) {
+        const amount = Math.round(Math.min(debtors[i].net, creditors[j].net) * 100) / 100
+        if (amount >= EPSILON) {
+          groupTransfers.push({ from: debtors[i].member, to: creditors[j].member, amount })
+        }
+        debtors[i].net = Math.round((debtors[i].net - amount) * 100) / 100
+        creditors[j].net = Math.round((creditors[j].net - amount) * 100) / 100
+        if (debtors[i].net < EPSILON) i++
+        if (creditors[j].net < EPSILON) j++
+      }
+
+      if (groupTransfers.length > 0) {
+        result.push({ groupName: groupMembers.map(m => m.name).join(' & '), transfers: groupTransfers })
+      }
+    }
+    return result
+  }, [balances, members])
+
+  const hasIntraGroupDebts = intraGroupTransfers.length > 0
   const baseCurrency = trip?.base_currency || 'VND'
 
   return (
@@ -214,6 +263,45 @@ export function SettleUpPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Intra-Group Settlements */}
+      {hasIntraGroupDebts && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowIntraGroup(!showIntraGroup)}
+            className="flex items-center justify-between w-full py-2 px-3 rounded-lg bg-slate-100 dark:bg-slate-700 text-sm"
+          >
+            <span className="font-medium text-slate-600 dark:text-slate-300">
+              👥 {t('settle.intraGroup')}
+            </span>
+            <span className="text-slate-400 text-xs">{showIntraGroup ? '▲' : '▼'}</span>
+          </button>
+
+          {showIntraGroup && (
+            <div className="mt-2 space-y-3">
+              <p className="text-xs text-slate-500 px-1">{t('settle.intraGroupHint')}</p>
+              {intraGroupTransfers.map((group) => (
+                <div key={group.groupName} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 border border-slate-200 dark:border-slate-700">
+                  <p className="text-xs font-medium text-slate-500 mb-2">{group.groupName}</p>
+                  {group.transfers.map((tr, idx) => (
+                    <div key={idx} className="flex items-center justify-between py-1.5">
+                      <div className="flex items-center gap-2">
+                        <Avatar name={tr.from.name} style={tr.from.avatar_style} seed={tr.from.avatar_seed} size={24} />
+                        <span className="text-sm">→</span>
+                        <Avatar name={tr.to.name} style={tr.to.avatar_style} seed={tr.to.avatar_seed} size={24} />
+                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                          {tr.from.name} → {tr.to.name}
+                        </span>
+                      </div>
+                      <span className="font-semibold text-sm">{formatCurrency(tr.amount, baseCurrency)}</span>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
