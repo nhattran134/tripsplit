@@ -63,7 +63,9 @@ export function AddDepositPage() {
       if (error) throw new Error(error.message)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      queryClient.removeQueries({ queryKey: ['deposits', tripId] })
+      queryClient.removeQueries({ queryKey: ['expenses', tripId] })
+      queryClient.removeQueries({ queryKey: ['expense_splits', tripId] })
       navigate(`/trip/${tripId}`)
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'Failed to add deposit'),

@@ -222,12 +222,12 @@ export function AddExpensePage() {
     },
     onSuccess: () => {
       submittingRef.current = false
-      // Refetch queries and wait briefly before navigating
-      // This prevents stale/partial data flash on the target page
-      queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
-      queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-      queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
-      setTimeout(() => navigate(`/trip/${tripId}`), 300)
+      // Remove cached queries entirely to force fresh fetch on next page
+      queryClient.removeQueries({ queryKey: ['expenses', tripId] })
+      queryClient.removeQueries({ queryKey: ['expense_splits', tripId] })
+      queryClient.removeQueries({ queryKey: ['deposits', tripId] })
+      queryClient.removeQueries({ queryKey: ['recent-expenses', tripId] })
+      navigate(`/trip/${tripId}`)
     },
     onError: (e) => {
       submittingRef.current = false
