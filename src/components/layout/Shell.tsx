@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { OfflineBadge } from '@/components/common/OfflineBadge'
 import { LanguageToggle } from '@/components/common/LanguageToggle'
+import { ToastContainer } from '@/components/common/Toast'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 
 export function Shell() {
@@ -14,6 +15,7 @@ export function Shell() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 pwa-top-padding">
       <OfflineBadge />
+      <ToastContainer />
       <main className={`px-4 pt-6 max-w-lg mx-auto ${isTripRoute ? 'pb-safe' : 'pb-8'}`}>
         <Outlet />
       </main>

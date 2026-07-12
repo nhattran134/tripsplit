@@ -303,6 +303,7 @@ export function MembersPage() {
                   <p className="font-semibold">{member.name}</p>
                   {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">{t('common.you')}</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
+                  {trip?.budget_holder_id === member.id && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">💰 {t('members.budgetHolder')}</span>}
                   {!member.claimed && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">{t('members.unclaimed')}</span>}
                 </div>
                 {/* Show token - visible to all trip members */}

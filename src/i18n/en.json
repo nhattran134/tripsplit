@@ -54,7 +54,8 @@
     "copied": "✓ Copied",
     "games": "Games",
     "gomoku": "Gomoku",
-    "gomokuDesc": "5-in-a-row • Play with your group"
+    "gomokuDesc": "5-in-a-row • Play with your group",
+    "spendingByCategory": "Spending by Category"
   },
   "expense": {
     "title": "Add Expense",
@@ -83,7 +84,11 @@
     "splitAmong": "Split Among",
     "saving": "Saving...",
     "addButton": "Add Expense",
-    "totalInBase": "Total in base"
+    "totalInBase": "Total in base",
+    "weightedSplit": "Weighted: couples share 1 portion",
+    "weightedHint": "Groups share 1 portion among their members",
+    "recent": "Recent",
+    "repeatHint": "Tap to repeat expense"
   },
   "deposit": {
     "title": "Add Deposit",
@@ -98,6 +103,7 @@
     "title": "Members",
     "deposited": "Deposited",
     "theirShare": "Their Share",
+    "budgetHolder": "Budget Holder",
     "add": "+ Add",
     "cancel": "Cancel",
     "adding": "Adding...",
@@ -134,7 +140,10 @@
     "methodDirect": "direct",
     "methodViaPool": "via pool",
     "intraGroup": "Within-group settlements",
-    "intraGroupHint": "These are private — settle between yourselves"
+    "intraGroupHint": "These are private — settle between yourselves",
+    "poolSurplus": "Pool Surplus",
+    "poolSurplusHint": "Leftover from group pool - refund to depositors",
+    "refundAmount": "Refund"
   },
   "history": {
     "title": "History",
@@ -156,6 +165,8 @@
     "baseCurrency": "Base Currency",
     "inviteLink": "Invite Link",
     "language": "Language",
+    "budgetHolder": "Budget Holder",
+    "budgetHolderHint": "This person can top-up for all members",
     "currencyHint": "All amounts shown without currency symbol are in {{currency}}",
     "exchangeRate": "Exchange Rate",
     "from": "From...",
@@ -229,5 +240,17 @@
     "noMembers": "No members",
     "addMember": "+ Add member...",
     "ungrouped": "Ungrouped"
+  },
+  "category": {
+    "food": "Food",
+    "transport": "Transport",
+    "accommodation": "Accommodation",
+    "entertainment": "Entertainment",
+    "shopping": "Shopping",
+    "other": "Other"
+  },
+  "notification": {
+    "newExpense": "{{name}} added expense: {{desc}}",
+    "newDeposit": "{{name}} deposited"
   }
 }

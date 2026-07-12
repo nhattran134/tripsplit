@@ -159,6 +159,32 @@ export function SettleUpPage() {
   const hasIntraGroupDebts = intraGroupTransfers.length > 0
   const baseCurrency = trip?.base_currency || 'VND'
 
+  // Pool surplus calculation for refund
+  const poolSurplus = useMemo(() => {
+    const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
+    const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
+    return totalDeposits - totalPoolExpenses
+  }, [deposits, expenses])
+
+  const depositorRefunds = useMemo(() => {
+    if (poolSurplus <= 0.01) return []
+    const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
+    if (totalDeposits === 0) return []
+
+    const depositorTotals = new Map<string, number>()
+    for (const d of deposits) {
+      const memberId = d.member_id
+      const base = Number(d.amount) * Number(d.rate_to_base)
+      depositorTotals.set(memberId, (depositorTotals.get(memberId) || 0) + base)
+    }
+
+    return [...depositorTotals.entries()].map(([memberId, deposited]) => {
+      const member = members.find(m => m.id === memberId)
+      const refund = (deposited / totalDeposits) * poolSurplus
+      return { member, refund }
+    }).filter(r => r.refund > 0.01)
+  }, [poolSurplus, deposits, members])
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
@@ -263,6 +289,27 @@ export function SettleUpPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pool Surplus Refund */}
+      {depositorRefunds.length > 0 && (
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">💰</span>
+            <div>
+              <p className="font-semibold text-sm text-green-800 dark:text-green-200">{t('settle.poolSurplus')}: {formatCurrency(poolSurplus, baseCurrency)}</p>
+              <p className="text-xs text-green-600 dark:text-green-400">{t('settle.poolSurplusHint')}</p>
+            </div>
+          </div>
+          <div className="space-y-1.5 mt-3">
+            {depositorRefunds.map((r) => (
+              <div key={r.member?.id} className="flex items-center justify-between text-sm">
+                <span className="text-green-700 dark:text-green-300">{t('settle.refundAmount')}: {r.member?.name}</span>
+                <span className="font-bold text-green-700 dark:text-green-300">{formatCurrency(r.refund, baseCurrency)}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

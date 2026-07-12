@@ -1,5 +1,10 @@
 @import 'tailwindcss';
 
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* iOS Safe Areas + Mobile Compatibility */
 :root {
   --sat: env(safe-area-inset-top, 0px);

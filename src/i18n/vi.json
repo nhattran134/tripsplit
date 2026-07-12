@@ -54,7 +54,8 @@
     "copied": "✓ Đã sao chép",
     "games": "Trò chơi",
     "gomoku": "Gomoku",
-    "gomokuDesc": "5 liên tiếp - Chơi cùng nhóm"
+    "gomokuDesc": "5 liên tiếp - Chơi cùng nhóm",
+    "spendingByCategory": "Chi tiêu theo loại"
   },
   "expense": {
     "title": "Thêm chi tiêu",
@@ -83,7 +84,11 @@
     "splitAmong": "Chia cho",
     "saving": "Đang lưu...",
     "addButton": "Thêm chi tiêu",
-    "totalInBase": "Tổng quy đổi"
+    "totalInBase": "Tổng quy đổi",
+    "weightedSplit": "Chia theo nhóm",
+    "weightedHint": "Các cặp/nhóm chia chung 1 phần",
+    "recent": "Gần đây",
+    "repeatHint": "Nhấn để lặp lại chi tiêu"
   },
   "deposit": {
     "title": "Nạp tiền",
@@ -98,6 +103,7 @@
     "title": "Thành viên",
     "deposited": "Đã góp",
     "theirShare": "Phần của họ",
+    "budgetHolder": "Giữ quỹ",
     "add": "+ Thêm",
     "cancel": "Hủy",
     "adding": "Đang thêm...",
@@ -134,7 +140,10 @@
     "methodDirect": "trực tiếp",
     "methodViaPool": "qua quỹ",
     "intraGroup": "Thanh toán nội bộ nhóm",
-    "intraGroupHint": "Riêng tư — tự thanh toán với nhau trong nhóm"
+    "intraGroupHint": "Riêng tư — tự thanh toán với nhau trong nhóm",
+    "poolSurplus": "Dư quỹ",
+    "poolSurplusHint": "Tiền dư từ quỹ chung - hoàn lại cho người nạp",
+    "refundAmount": "Hoàn lại"
   },
   "history": {
     "title": "Lịch sử",
@@ -156,6 +165,8 @@
     "baseCurrency": "Đơn vị tiền tệ",
     "inviteLink": "Link mời",
     "language": "Ngôn ngữ",
+    "budgetHolder": "Người giữ quỹ",
+    "budgetHolderHint": "Người này có thể nạp tiền cho tất cả thành viên",
     "currencyHint": "Tất cả số tiền không có ký hiệu tiền tệ đều tính bằng {{currency}}",
     "exchangeRate": "Tỷ giá",
     "from": "Từ...",
@@ -229,5 +240,17 @@
     "noMembers": "Chưa có thành viên",
     "addMember": "+ Thêm thành viên...",
     "ungrouped": "Chưa phân nhóm"
+  },
+  "category": {
+    "food": "Ăn uống",
+    "transport": "Di chuyển",
+    "accommodation": "Chỗ ở",
+    "entertainment": "Giải trí",
+    "shopping": "Mua sắm",
+    "other": "Khác"
+  },
+  "notification": {
+    "newExpense": "{{name}} thêm chi tiêu: {{desc}}",
+    "newDeposit": "{{name}} nạp quỹ"
   }
 }

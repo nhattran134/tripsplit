@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, RefreshCw, Globe, Download, Share2, FileSpreadsheet, Archive, Trash2 } from 'lucide-react'
+import { ArrowLeft, RefreshCw, Globe, Download, Share2, FileSpreadsheet, Archive, Trash2, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
 import { COMMON_CURRENCIES, fetchRate, formatAmount } from '@/lib/currency'
@@ -102,6 +102,19 @@ export function SettingsPage() {
     },
   })
 
+  const updateBudgetHolderMutation = useMutation({
+    mutationFn: async (memberId: string | null) => {
+      const { error } = await supabase
+        .from('trips')
+        .update({ budget_holder_id: memberId })
+        .eq('id', tripId)
+      if (error) throw new Error(error.message)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
+    },
+  })
+
   const poolBalance = useMemo(() => {
     const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
     const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
@@ -167,6 +180,25 @@ export function SettingsPage() {
             </select>
             <p className="text-xs text-slate-400">{t('settings.currencyHint', { currency: trip.base_currency })}</p>
           </div>
+
+          {/* Budget Holder */}
+          {isAdmin && (
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+              <div className="flex items-center gap-2">
+                <Wallet size={16} className="text-slate-500" />
+                <p className="font-semibold text-sm">{t('settings.budgetHolder')}</p>
+              </div>
+              <select
+                value={trip.budget_holder_id || ''}
+                onChange={(e) => updateBudgetHolderMutation.mutate(e.target.value || null)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="">— None —</option>
+                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+              <p className="text-xs text-slate-400">{t('settings.budgetHolderHint')}</p>
+            </div>
+          )}
 
           {/* Exchange Rate Lookup */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,7 @@ import { calculateEqualSplit, validateCustomSplit } from '@/lib/splits'
 import { formatCurrency, COMMON_CURRENCIES, fetchRate } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { MoneyInput } from '@/components/common/MoneyInput'
-import type { Member } from '@/types'
+import type { Member, Expense } from '@/types'
 
 const CATEGORIES = [
   { value: 'food', label: '🍜 Food', emoji: '🍜' },
@@ -86,6 +86,50 @@ export function AddExpensePage() {
     },
   })
 
+  // Feature 3: Query member groups for weighted split
+  const { data: memberGroups = [] } = useQuery({
+    queryKey: ['member-groups', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('member_groups').select('*').eq('trip_id', tripId)
+      if (error) throw error
+      return data as { id: string; trip_id: string; name: string }[]
+    },
+  })
+
+  // Feature 6: Query last 5 expenses for repeat functionality
+  const { data: recentExpenses = [] } = useQuery({
+    queryKey: ['recent-expenses', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('*, expense_splits(member_id)')
+        .eq('trip_id', tripId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: false })
+        .limit(5)
+      if (error) throw error
+      return data as (Expense & { expense_splits: { member_id: string }[] })[]
+    },
+  })
+
+  // Feature 3: Compute weights based on group membership
+  const groupWeights = useMemo(() => {
+    if (memberGroups.length === 0) return undefined
+    const weights: Record<string, number> = {}
+    let hasGroupedMembers = false
+    for (const member of members) {
+      if (member.group_id) {
+        // Count members in same group
+        const groupSize = members.filter(m => m.group_id === member.group_id).length
+        weights[member.id] = 1 / groupSize
+        hasGroupedMembers = true
+      } else {
+        weights[member.id] = 1
+      }
+    }
+    return hasGroupedMembers ? weights : undefined
+  }, [members, memberGroups])
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (submittingRef.current) return
@@ -108,7 +152,7 @@ export function AddExpensePage() {
 
       let splits: { member_id: string; share_amount: number }[]
       if (splitType === 'equal' || splitType === 'specific') {
-        splits = calculateEqualSplit(baseAmount, splitMembers, baseCurrency, undefined, expenses.length)
+        splits = calculateEqualSplit(baseAmount, splitMembers, baseCurrency, groupWeights, expenses.length)
       } else {
         const parsed: Record<string, number> = {}
         for (const id of selectedMembers) {
@@ -182,6 +226,38 @@ export function AddExpensePage() {
         <button onClick={() => navigate(`/trip/${tripId}`)} className="text-indigo-600 dark:text-indigo-400">←</button>
         <h1 className="text-xl font-bold">{t('expense.title')}</h1>
       </div>
+
+      {/* Feature 6: Recent expenses for quick repeat */}
+      {recentExpenses.length > 0 && (
+        <div>
+          <p className="text-xs text-slate-500 mb-1.5">{t('expense.recent')} <span className="text-slate-400">— {t('expense.repeatHint')}</span></p>
+          <div className="flex flex-wrap gap-1.5">
+            {recentExpenses.map((exp) => (
+              <button
+                key={exp.id}
+                onClick={() => {
+                  setAmount(String(exp.amount))
+                  setCategory(exp.category || 'food')
+                  setDescription(exp.description || '')
+                  setPaidFrom(exp.paid_from || 'pocket')
+                  if (exp.member_id) setPaidBy(exp.member_id)
+                  if (exp.expense_splits?.length) {
+                    setSelectedMembers(exp.expense_splits.map((s: { member_id: string }) => s.member_id))
+                  }
+                  setSplitType(exp.split_type || 'equal')
+                  if (exp.currency && exp.currency !== baseCurrency) {
+                    setCurrency(exp.currency)
+                    setRateToBase(String(exp.rate_to_base))
+                  }
+                }}
+                className="px-2.5 py-1 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors truncate max-w-[150px]"
+              >
+                {exp.description || exp.category} • {formatCurrency(Number(exp.amount) * Number(exp.rate_to_base), baseCurrency)}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Amount + Currency */}
       <div className="flex gap-2">
@@ -379,6 +455,11 @@ export function AddExpensePage() {
             </button>
           ))}
         </div>
+        {splitType === 'equal' && groupWeights && (
+          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1.5 flex items-center gap-1">
+            👥 {t('expense.weightedSplit')}
+          </p>
+        )}
       </div>
 
       {/* Member Selection (for specific/custom) */}

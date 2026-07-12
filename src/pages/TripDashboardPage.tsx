@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Settings, Receipt, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { Avatar } from '@/components/common/Avatar'
+import { showToast } from '@/components/common/Toast'
 import { useAppStore } from '@/lib/store'
 import { calculateBalances } from '@/lib/settlement'
 import { formatCurrency, formatAmount } from '@/lib/currency'
@@ -133,25 +134,6 @@ export function TripDashboardPage() {
     },
   })
 
-  // Real-time sync: invalidate queries when data changes
-  useEffect(() => {
-    if (!tripId) return
-    const channel = supabase.channel(`trip-${tripId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
-        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `trip_id=eq.${tripId}` }, () => {
-        queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
-      })
-      .subscribe()
-
-    return () => { supabase.removeChannel(channel) }
-  }, [tripId, queryClient])
-
   // Current user identification
   const { data: currentSession } = useQuery({
     queryKey: ['session'],
@@ -161,6 +143,47 @@ export function TripDashboardPage() {
     },
   })
   const currentAuthUid = currentSession?.user?.id
+
+  // Real-time sync: invalidate queries when data changes
+  useEffect(() => {
+    if (!tripId) return
+    const channel = supabase.channel(`trip-${tripId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
+        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
+        // Show toast for new expenses from other users
+        const newExp = payload.new as any
+        if (newExp && newExp.member_id) {
+          const expMember = members.find(m => m.id === newExp.member_id)
+          if (expMember && expMember.auth_uid !== currentAuthUid) {
+            showToast(t('notification.newExpense', { name: expMember.name, desc: newExp.description || newExp.category || '' }))
+          }
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
+        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, (payload) => {
+        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+        const newDep = payload.new as any
+        if (newDep && newDep.member_id) {
+          const depMember = members.find(m => m.id === newDep.member_id)
+          if (depMember && depMember.auth_uid !== currentAuthUid) {
+            showToast(t('notification.newDeposit', { name: depMember.name }))
+          }
+        }
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [tripId, queryClient, members, currentAuthUid, t])
 
   const totalDeposits = useMemo(
     () => deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0),
@@ -251,6 +274,51 @@ export function TripDashboardPage() {
           })}
         </div>
       </div>
+
+      {/* Spending by Category */}
+      {expenses.length > 0 && (() => {
+        const CATEGORY_COLORS: Record<string, string> = {
+          food: '#f59e0b', transport: '#3b82f6', accommodation: '#8b5cf6',
+          entertainment: '#ec4899', shopping: '#10b981', activities: '#ec4899',
+          telecom: '#6366f1', medical: '#ef4444', other: '#6b7280'
+        }
+        const categoryTotals = new Map<string, number>()
+        for (const exp of expenses) {
+          const cat = exp.category || 'other'
+          const base = (Number(exp.amount) || 0) * (Number(exp.rate_to_base) || 1)
+          categoryTotals.set(cat, (categoryTotals.get(cat) || 0) + base)
+        }
+        const sorted = [...categoryTotals.entries()].sort((a, b) => b[1] - a[1])
+        const maxAmount = sorted[0]?.[1] || 1
+
+        return (
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+            <h2 className="font-semibold mb-3">{t('dashboard.spendingByCategory')}</h2>
+            <div className="space-y-2.5">
+              {sorted.map(([cat, amount]) => {
+                const pct = Math.round((amount / totalAllExpenses) * 100)
+                const barWidth = Math.round((amount / maxAmount) * 100)
+                const color = CATEGORY_COLORS[cat] || '#6b7280'
+                const catKey = `category.${cat}` as const
+                return (
+                  <div key={cat}>
+                    <div className="flex items-center justify-between text-sm mb-0.5">
+                      <span className="font-medium text-slate-700 dark:text-slate-300">{t(catKey as any) !== catKey ? t(catKey as any) : cat}</span>
+                      <span className="text-slate-500">{formatCurrency(amount, trip.base_currency)} ({pct}%)</span>
+                    </div>
+                    <div className="w-full h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${barWidth}%`, backgroundColor: color }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Share Link */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
