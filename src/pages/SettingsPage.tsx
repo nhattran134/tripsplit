@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, RefreshCw, Globe, Download, Share2, FileSpreadsheet, Archive, Trash2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useAppStore } from '@/lib/store'
-import { COMMON_CURRENCIES, fetchRate } from '@/lib/currency'
+import { COMMON_CURRENCIES, fetchRate, formatAmount } from '@/lib/currency'
 import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { exportCSV, exportTextToClipboard } from '@/lib/export'
 import { useCopy } from '@/hooks/useCopy'
@@ -101,6 +101,12 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['trip', tripId] })
     },
   })
+
+  const poolBalance = useMemo(() => {
+    const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
+    const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
+    return totalDeposits - totalPoolExpenses
+  }, [deposits, expenses])
 
   const handleFetchRate = async () => {
     if (!rateFrom || !trip) return
@@ -260,6 +266,11 @@ export function SettingsPage() {
               <p className="font-semibold text-sm">Trip Management</p>
 
               {/* Finalize / Mark Done */}
+              {!trip.archived_at && poolBalance > 0 && (
+                <p className="text-xs text-amber-600 mb-2">
+                  Pool surplus: {formatAmount(poolBalance, trip.base_currency)} {trip.base_currency} — will be shown as refund in settlements
+                </p>
+              )}
               {trip.archived_at ? (
                 <div className="text-center py-2">
                   <p className="text-sm text-green-600 font-medium">✓ Trip is finalized</p>

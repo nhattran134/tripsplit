@@ -16,6 +16,23 @@ describe('calculateEqualSplit', () => {
     expect(Math.round(total * 100) / 100).toBe(100)
   })
 
+  it('rotates remainder recipient based on remainderIndex', () => {
+    const result0 = calculateEqualSplit(100, ['a', 'b', 'c'], 'USD', undefined, 0)
+    expect(result0[0].share_amount).toBe(33.34)
+
+    const result1 = calculateEqualSplit(100, ['a', 'b', 'c'], 'USD', undefined, 1)
+    expect(result1[1].share_amount).toBe(33.34)
+    expect(result1[0].share_amount).toBe(33.33)
+
+    const result2 = calculateEqualSplit(100, ['a', 'b', 'c'], 'USD', undefined, 2)
+    expect(result2[2].share_amount).toBe(33.34)
+    expect(result2[0].share_amount).toBe(33.33)
+
+    // Wraps around
+    const result3 = calculateEqualSplit(100, ['a', 'b', 'c'], 'USD', undefined, 3)
+    expect(result3[0].share_amount).toBe(33.34)
+  })
+
   it('handles JPY (zero decimals)', () => {
     const result = calculateEqualSplit(1000, ['a', 'b', 'c'], 'JPY')
     expect(result[0].share_amount).toBe(334)

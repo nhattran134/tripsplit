@@ -7,14 +7,15 @@ export interface SplitResult {
 
 /**
  * Calculate equal (or weighted) split with remainder handling.
- * Remainder is assigned to the first member to ensure sum === baseAmount exactly.
+ * Remainder is assigned to the member at remainderIndex (rotates) to ensure sum === baseAmount exactly.
  * If weights are provided, each member's share is proportional to their weight.
  */
 export function calculateEqualSplit(
   baseAmount: number,
   memberIds: string[],
   baseCurrency: string,
-  weights?: Record<string, number> // optional: member_id -> weight (default 1)
+  weights?: Record<string, number>, // optional: member_id -> weight (default 1)
+  remainderIndex?: number // optional: which member gets the remainder (rotates)
 ): SplitResult[] {
   if (memberIds.length === 0) return []
 
@@ -32,11 +33,12 @@ export function calculateEqualSplit(
     return { member_id: memberId, share_amount: share }
   })
 
-  // Handle remainder - assign to first member
+  // Handle remainder - assign to rotated member
   const totalAllocated = results.reduce((sum, r) => sum + r.share_amount, 0)
   const remainder = Math.round((baseAmount - totalAllocated) * factor) / factor
+  const recipientIdx = (remainderIndex ?? 0) % results.length
   if (results.length > 0 && remainder > 0) {
-    results[0].share_amount = Math.round((results[0].share_amount + remainder) * factor) / factor
+    results[recipientIdx].share_amount = Math.round((results[recipientIdx].share_amount + remainder) * factor) / factor
   }
 
   return results

@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Settings, Receipt, Wallet } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
@@ -38,6 +38,7 @@ function ChallengeNotification({ tripId, currentAuthUid, members }: { tripId: st
 export function TripDashboardPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { myTrips, addTrip } = useAppStore()
   const { copy, copiedId } = useCopy()
   const { t } = useTranslation()
@@ -131,6 +132,25 @@ export function TripDashboardPage() {
       return data as Settlement[]
     },
   })
+
+  // Real-time sync: invalidate queries when data changes
+  useEffect(() => {
+    if (!tripId) return
+    const channel = supabase.channel(`trip-${tripId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
+        queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'deposits', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settlements', filter: `trip_id=eq.${tripId}` }, () => {
+        queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [tripId, queryClient])
 
   // Current user identification
   const { data: currentSession } = useQuery({

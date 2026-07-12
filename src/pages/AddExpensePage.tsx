@@ -38,6 +38,7 @@ export function AddExpensePage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
   const submittingRef = useRef(false)
 
   const { data: trip } = useQuery({
@@ -62,6 +63,16 @@ export function AddExpensePage() {
     },
   })
 
+  const { data: expenses = [] } = useQuery({
+    queryKey: ['expenses', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses').select('id').eq('trip_id', tripId).is('deleted_at', null)
+      if (error) throw error
+      return data
+    },
+  })
+
   const mutation = useMutation({
     mutationFn: async () => {
       if (submittingRef.current) return
@@ -81,7 +92,7 @@ export function AddExpensePage() {
 
       let splits: { member_id: string; share_amount: number }[]
       if (splitType === 'equal' || splitType === 'specific') {
-        splits = calculateEqualSplit(baseAmount, splitMembers, baseCurrency)
+        splits = calculateEqualSplit(baseAmount, splitMembers, baseCurrency, undefined, expenses.length)
       } else {
         const parsed: Record<string, number> = {}
         for (const id of selectedMembers) {
@@ -118,6 +129,15 @@ export function AddExpensePage() {
       }))
       const { error: splitError } = await supabase.from('expense_splits').insert(splitRows)
       if (splitError) throw new Error(splitError.message)
+
+      // Upload receipt photo if provided
+      if (receiptFile) {
+        const ext = receiptFile.name.split('.').pop() || 'jpg'
+        const path = `receipts/${tripId}/${expenseId}.${ext}`
+        await supabase.storage.from('receipts').upload(path, receiptFile)
+        const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(path)
+        await supabase.from('expenses').update({ receipt_url: urlData.publicUrl }).eq('id', expenseId)
+      }
     },
     onSuccess: () => {
       submittingRef.current = false
@@ -202,6 +222,9 @@ export function AddExpensePage() {
             }`}
           />
           {amount && <p className="text-xs text-slate-500 mt-1">= {formatCurrency(parseFloat(amount) * parseFloat(rateToBase || '1'), baseCurrency)}</p>}
+          {!fetchingRate && rateToBase === '1' && currency !== '' && (
+            <p className="text-xs text-amber-500 mt-1">⚠️ Could not fetch rate. Enter manually or try again when online.</p>
+          )}
         </div>
       )}
 
@@ -247,6 +270,22 @@ export function AddExpensePage() {
             className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
           />
         </div>
+      </div>
+
+      {/* Receipt photo (optional) */}
+      <div>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Receipt (optional)</label>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            if (!file) return
+            setReceiptFile(file)
+          }}
+          className="mt-1 w-full text-sm text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
+        />
       </div>
 
       {/* Paid By */}

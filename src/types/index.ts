@@ -50,6 +50,7 @@ export interface Expense {
   date: string
   split_type: 'equal' | 'custom' | 'specific'
   paid_from: 'pool' | 'pocket'
+  receipt_url: string | null
   created_at: string
   deleted_at: string | null
   version: number
