@@ -87,11 +87,6 @@ export function AddExpensePage() {
 
   const poolTotal = deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
   const hasPool = poolTotal > 0
-  const myMemberId = members.find(m => m.auth_uid === currentAuthUid)?.id
-  const canUsePool = hasPool && (
-    members.find(m => m.id === myMemberId)?.is_admin ||
-    trip?.budget_holder_id === myMemberId
-  )
 
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses', tripId],
@@ -420,7 +415,7 @@ export function AddExpensePage() {
       )}
 
       {/* Paid From */}
-      {canUsePool ? (
+      {hasPool ? (
       <div>
         <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.paidFrom')}</label>
         <div className="mt-1 flex gap-2">
@@ -451,7 +446,7 @@ export function AddExpensePage() {
       </div>
       ) : (
       <div className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs text-slate-500">
-        👛 {hasPool ? t('expense.poolAdminOnly') : t('expense.noPoolHint')}
+        👛 {t('expense.noPoolHint')}
       </div>
       )}
 
