@@ -59,6 +59,21 @@ export function HistoryPage() {
     },
   })
 
+  const { data: expenseSplits = [] } = useQuery({
+    queryKey: ['expense_splits', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expense_splits')
+        .select('*, expenses!inner(trip_id)')
+        .eq('expenses.trip_id', tripId)
+        .is('expenses.deleted_at', null)
+      if (error) throw error
+      return (data || []).map((s: any) => ({
+        expense_id: s.expense_id, member_id: s.member_id, share_amount: Number(s.share_amount),
+      }))
+    },
+  })
+
   // Check if current user is admin
   const { data: currentSession } = useQuery({
     queryKey: ['session'],
@@ -104,6 +119,7 @@ export function HistoryPage() {
     currency?: string
     category?: string
     split_type?: string
+    splits?: { name: string; amount: number }[]
   }
 
   const timeline: TimelineItem[] = [
@@ -120,6 +136,9 @@ export function HistoryPage() {
       currency: e.currency,
       category: e.category,
       split_type: e.split_type,
+      splits: expenseSplits
+        .filter(s => s.expense_id === e.id)
+        .map(s => ({ name: members.find(m => m.id === s.member_id)?.name || '?', amount: s.share_amount })),
     })) : []),
     ...(filter === 'all' || filter === 'deposit' ? deposits.map((d) => ({
       id: d.id,
@@ -249,6 +268,18 @@ export function HistoryPage() {
                   <p className="text-slate-500">
                     {item.member?.name && `${t('history.by')}: ${item.member.name}`} • {item.date ? new Date(item.date).toLocaleString() : ''}
                   </p>
+                  {/* Who paid for */}
+                  {item.splits && item.splits.length > 0 && (
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] text-slate-400 font-medium uppercase">{t('history.paidFor')}</p>
+                      {item.splits.map((s, idx) => (
+                        <div key={idx} className="flex justify-between">
+                          <span>{s.name}</span>
+                          <span className="text-slate-500">{formatAmount(s.amount, baseCurrency)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {/* Receipt */}
                   {item.receipt_url && (
                     <a href={item.receipt_url} target="_blank" rel="noopener noreferrer" className="block">
