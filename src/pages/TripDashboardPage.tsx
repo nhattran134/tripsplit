@@ -220,10 +220,10 @@ export function TripDashboardPage() {
             {formatAmount(totalAllExpenses, trip.base_currency)}
           </p>
         </div>
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl p-3 text-center">
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">{t('dashboard.pool')}</p>
-          <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300 mt-1">
-            {formatAmount(poolBalance, trip.base_currency)}
+        <div className={`rounded-xl p-3 text-center ${poolBalance < 0 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-indigo-50 dark:bg-indigo-900/20'}`}>
+          <p className={`text-xs font-medium ${poolBalance < 0 ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'}`}>{t('dashboard.pool')}</p>
+          <p className={`text-sm font-bold mt-1 ${poolBalance < 0 ? 'text-red-700 dark:text-red-300' : 'text-indigo-700 dark:text-indigo-300'}`}>
+            {poolBalance < 0 ? '-' : ''}{formatAmount(Math.abs(poolBalance), trip.base_currency)}
           </p>
         </div>
       </div>

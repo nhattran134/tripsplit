@@ -88,6 +88,20 @@ export function AddExpensePage() {
   const poolTotal = deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
   const hasPool = poolTotal > 0
 
+  // Query pool expenses total for remaining balance calculation
+  const { data: poolExpensesData = [] } = useQuery({
+    queryKey: ['pool-expenses-total', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('expenses').select('amount, rate_to_base')
+        .eq('trip_id', tripId).eq('paid_from', 'pool').is('deleted_at', null)
+      if (error) throw error
+      return data || []
+    },
+  })
+  const poolSpent = poolExpensesData.reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+  const poolRemaining = poolTotal - poolSpent
+
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses-count', tripId],
     queryFn: async () => {
@@ -459,6 +473,13 @@ export function AddExpensePage() {
       <div className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs text-slate-500">
         👛 {t('expense.noPoolHint')}
       </div>
+      )}
+
+      {/* Pool overage warning */}
+      {paidFrom === 'pool' && amount && parseFloat(amount) * (parseFloat(rateToBase) || 1) > poolRemaining && poolRemaining >= 0 && (
+        <div className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-xs text-amber-700 dark:text-amber-300">
+          ⚠️ {t('expense.exceedsPool', { amount: formatCurrency(parseFloat(amount) * (parseFloat(rateToBase) || 1) - poolRemaining, trip?.base_currency || 'VND') })}
+        </div>
       )}
 
       {/* Split Type */}

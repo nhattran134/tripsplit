@@ -81,6 +81,7 @@
     "paidFromPocket": "Paid from personal money (will be reimbursed)",
     "noPoolHint": "Paying from personal money (no pool deposits yet)",
     "poolAdminOnly": "Only admin or budget holder can pay from pool",
+    "exceedsPool": "Exceeds pool by {{amount}} — someone will need to top up",
     "receipt": "Receipt (optional)",
     "split": "Split",
     "equal": "Equal",
