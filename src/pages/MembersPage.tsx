@@ -201,7 +201,7 @@ export function MembersPage() {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Member name"
+            placeholder={t('members.memberName')}
             className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
             autoFocus
           />
@@ -235,7 +235,7 @@ export function MembersPage() {
               <div className="flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="font-semibold">{member.name}</p>
-                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
+                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">{t('common.you')}</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
                   {!member.claimed && <span className="text-xs bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded">{t('members.unclaimed')}</span>}
                 </div>
@@ -252,7 +252,7 @@ export function MembersPage() {
             {/* Avatar picker (for current user) */}
             {editingAvatar === member.id && (
               <div className="mb-3 p-3 bg-slate-50 dark:bg-slate-900 rounded-lg">
-                <p className="text-xs font-medium text-slate-500 mb-2">Choose your avatar</p>
+                <p className="text-xs font-medium text-slate-500 mb-2">{t('members.chooseAvatar')}</p>
                 <AvatarPicker
                   name={member.name}
                   selected={member.avatar_style}
@@ -323,6 +323,7 @@ export function MembersPage() {
 
 function GroupsSection({ tripId, members }: { tripId: string; members: Member[] }) {
   const queryClient = useQueryClient()
+  const { t } = useTranslation()
   const [newGroupName, setNewGroupName] = useState('')
   const [showCreate, setShowCreate] = useState(false)
 
@@ -374,12 +375,12 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
   return (
     <div className="mt-6 space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="font-semibold">Groups</h2>
+        <h2 className="font-semibold">{t('groups.title')}</h2>
         <button
           onClick={() => setShowCreate(!showCreate)}
           className="text-xs bg-indigo-600 text-white px-2.5 py-1 rounded-lg font-medium"
         >
-          + Group
+          {t('groups.addGroup')}
         </button>
       </div>
 
@@ -389,7 +390,7 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
             type="text"
             value={newGroupName}
             onChange={(e) => setNewGroupName(e.target.value)}
-            placeholder="e.g. Couple, Family A"
+            placeholder={t('groups.placeholder')}
             className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
             autoFocus
           />
@@ -397,13 +398,13 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
             onClick={() => createGroupMutation.mutate()}
             className="px-3 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium"
           >
-            Add
+            {t('groups.add')}
           </button>
         </div>
       )}
 
       {groups.length === 0 && !showCreate && (
-        <p className="text-xs text-slate-500">No groups yet. Create groups for couples or families to split expenses by group.</p>
+        <p className="text-xs text-slate-500">{t('groups.noGroups')}</p>
       )}
 
       {groups.map((group) => {
@@ -417,7 +418,7 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
                 onClick={() => { if (confirm(`Delete group "${group.name}"?`)) deleteGroupMutation.mutate(group.id) }}
                 className="text-xs text-red-500 hover:text-red-700"
               >
-                Delete
+                {t('groups.delete')}
               </button>
             </div>
             {/* Members in this group */}
@@ -428,7 +429,7 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
                   <button onClick={() => assignMemberMutation.mutate({ memberId: m.id, groupId: null })} className="text-indigo-400 hover:text-red-500">×</button>
                 </span>
               ))}
-              {groupMembers.length === 0 && <span className="text-xs text-slate-400">No members</span>}
+              {groupMembers.length === 0 && <span className="text-xs text-slate-400">{t('groups.noMembers')}</span>}
             </div>
             {/* Add member to group */}
             {unassigned.length > 0 && (
@@ -437,7 +438,7 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
                 className="w-full px-2 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-transparent text-xs"
                 defaultValue=""
               >
-                <option value="">+ Add member...</option>
+                <option value="">{t('groups.addMember')}</option>
                 {unassigned.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             )}
@@ -448,7 +449,7 @@ function GroupsSection({ tripId, members }: { tripId: string; members: Member[] 
       {/* Show ungrouped members */}
       {groups.length > 0 && (
         <div className="text-xs text-slate-500">
-          Ungrouped: {members.filter(m => !m.group_id).map(m => m.name).join(', ') || 'none'}
+          {t('groups.ungrouped')}: {members.filter(m => !m.group_id).map(m => m.name).join(', ') || 'none'}
         </div>
       )}
     </div>

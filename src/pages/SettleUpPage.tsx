@@ -122,8 +122,8 @@ export function SettleUpPage() {
           {expenseSplits.length === 0 && deposits.length === 0 ? (
             <>
               <p className="text-4xl mb-4">📝</p>
-              <p className="font-semibold text-slate-600 dark:text-slate-300">No transactions yet</p>
-              <p className="text-sm text-slate-500 mt-1">Add expenses and deposits to see settlements</p>
+              <p className="font-semibold text-slate-600 dark:text-slate-300">{t('settle.noTransactions')}</p>
+              <p className="text-sm text-slate-500 mt-1">{t('settle.noTransactionsHint')}</p>
             </>
           ) : (
             <>
@@ -162,7 +162,7 @@ export function SettleUpPage() {
 
                 {/* Editable settlement amount (Fix 2.6) */}
                 <div className="mt-3">
-                  <label className="text-xs text-slate-500">Amount to settle</label>
+                  <label className="text-xs text-slate-500">{t('settle.amountToSettle')}</label>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -182,7 +182,7 @@ export function SettleUpPage() {
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    💸 Direct
+                    {t('settle.direct')}
                   </button>
                   <button
                     onClick={() => setSettleMethods({ ...settleMethods, [index]: 'via_pool' })}
@@ -192,7 +192,7 @@ export function SettleUpPage() {
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
                     }`}
                   >
-                    💰 Via Pool
+                    {t('settle.viaPool')}
                   </button>
                 </div>
 
@@ -229,7 +229,7 @@ export function SettleUpPage() {
                 <div key={s.id} className="flex items-center justify-between py-2 text-sm border-b border-slate-100 dark:border-slate-700">
                   <div>
                     <span>{from?.name} → {to?.name}</span>
-                    <span className="ml-2 text-xs text-slate-400">({s.method === 'via_pool' ? 'via pool' : 'direct'})</span>
+                    <span className="ml-2 text-xs text-slate-400">({s.method === 'via_pool' ? t('settle.methodViaPool') : t('settle.methodDirect')})</span>
                   </div>
                   <span className="font-medium">{formatCurrency(Number(s.amount), baseCurrency)}</span>
                 </div>

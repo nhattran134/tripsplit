@@ -163,15 +163,15 @@ export function TripDashboardPage() {
   const currentAuthUid = currentSession?.user?.id
 
   const totalDeposits = useMemo(
-    () => deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0),
+    () => deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0),
     [deposits]
   )
   const totalPoolExpenses = useMemo(
-    () => expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0),
+    () => expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0),
     [expenses]
   )
   const totalAllExpenses = useMemo(
-    () => expenses.reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0),
+    () => expenses.reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0),
     [expenses]
   )
   const poolBalance = totalDeposits - totalPoolExpenses
@@ -240,7 +240,7 @@ export function TripDashboardPage() {
                 <div className="flex items-center gap-2">
                   <Avatar name={member.name} style={member.avatar_style} seed={member.avatar_seed} size={32} />
                   <span className="font-medium text-sm">{member.name}</span>
-                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">You</span>}
+                  {member.auth_uid === currentAuthUid && <span className="text-xs bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">{t('common.you')}</span>}
                   {member.is_admin && <span className="text-xs bg-indigo-100 dark:bg-indigo-900 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded">{t('common.admin')}</span>}
                 </div>
                 <span className={`text-sm font-semibold ${net >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -273,7 +273,7 @@ export function TripDashboardPage() {
                   ? 'text-green-600 dark:text-green-400'
                   : 'text-indigo-600 dark:text-indigo-400'
               }`}>
-                {copiedId === 'code' ? '✓ Copied' : trip.short_code}
+                {copiedId === 'code' ? t('dashboard.copied') : trip.short_code}
               </span>
             </button>
             <p className="text-[10px] text-slate-400 mt-1">{t('dashboard.tapToCopy')}</p>
@@ -303,15 +303,15 @@ export function TripDashboardPage() {
 
       {/* Games */}
       <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
-        <h2 className="font-semibold mb-2">Games</h2>
+        <h2 className="font-semibold mb-2">{t('dashboard.games')}</h2>
         <button
           onClick={() => navigate(`/trip/${tripId}/games/gomoku`)}
           className="w-full flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-300 transition-colors relative"
         >
           <span className="text-2xl">⚫⚪</span>
           <div className="text-left flex-1">
-            <p className="font-medium text-sm">Gomoku</p>
-            <p className="text-xs text-slate-500">5-in-a-row • Play with your group</p>
+            <p className="font-medium text-sm">{t('dashboard.gomoku')}</p>
+            <p className="text-xs text-slate-500">{t('dashboard.gomokuDesc')}</p>
           </div>
           <ChallengeNotification tripId={tripId!} currentAuthUid={currentAuthUid} members={members} />
         </button>
@@ -333,7 +333,7 @@ export function TripDashboardPage() {
         ) : (
           <div className="space-y-2">
             {[...expenses, ...deposits]
-              .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
               .slice(0, 5)
               .map((item) => {
                 const isExpense = 'category' in item
@@ -350,7 +350,7 @@ export function TripDashboardPage() {
                       </div>
                     </div>
                     <span className={`text-sm font-semibold ${isExpense ? 'text-red-600' : 'text-green-600'}`}>
-                      {isExpense ? '-' : '+'}{formatCurrency(Number(item.amount) * Number(item.rate_to_base), trip.base_currency)}
+                      {isExpense ? '-' : '+'}{formatCurrency((Number(item.amount) || 0) * (Number(item.rate_to_base) || 1), trip.base_currency)}
                     </span>
                   </div>
                 )

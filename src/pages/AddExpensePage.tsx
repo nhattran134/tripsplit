@@ -34,7 +34,7 @@ export function AddExpensePage() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [paidBy, setPaidBy] = useState('')
-  const [paidFrom, setPaidFrom] = useState<'pool' | 'pocket'>('pool')
+  const [paidFrom, setPaidFrom] = useState<'pool' | 'pocket'>('pocket')
   const [splitType, setSplitType] = useState<'equal' | 'custom' | 'specific'>('equal')
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [customAmounts, setCustomAmounts] = useState<Record<string, string>>({})
@@ -64,6 +64,18 @@ export function AddExpensePage() {
     },
   })
 
+  const { data: deposits = [] } = useQuery({
+    queryKey: ['deposits', tripId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('deposits').select('amount, rate_to_base').eq('trip_id', tripId).is('deleted_at', null)
+      if (error) throw error
+      return data || []
+    },
+  })
+
+  const poolTotal = deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+  const hasPool = poolTotal > 0
+
   const { data: expenses = [] } = useQuery({
     queryKey: ['expenses', tripId],
     queryFn: async () => {
@@ -81,7 +93,10 @@ export function AddExpensePage() {
 
       const numAmount = parseFloat(amount)
       if (!numAmount || numAmount <= 0) throw new Error('Enter a valid amount')
-      if (!paidBy) throw new Error('Select who paid')
+      if (!paidBy && paidFrom === 'pocket') throw new Error('Select who paid')
+      // For pool expenses, auto-assign first member as payer (it's just record-keeping)
+      const actualPayer = paidBy || members[0]?.id
+      if (!actualPayer) throw new Error('No members found')
 
       // For equal split, always use all members; for specific/custom, use selection
       const splitMembers = splitType === 'equal' ? members.map((m) => m.id) : selectedMembers
@@ -110,7 +125,7 @@ export function AddExpensePage() {
       const { error: expError } = await supabase.from('expenses').insert({
         id: expenseId,
         trip_id: tripId,
-        member_id: paidBy,
+        member_id: actualPayer,
         amount: numAmount,
         currency: currency || baseCurrency,
         rate_to_base: numRate,
@@ -209,8 +224,8 @@ export function AddExpensePage() {
       {!isSameCurrency && (
         <div>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Rate (1 {currency} = ? {baseCurrency})
-            {fetchingRate && <span className="ml-2 text-xs text-indigo-500 animate-pulse">fetching...</span>}
+            {t('expense.rateLabel', { from: currency, to: baseCurrency })}
+            {fetchingRate && <span className="ml-2 text-xs text-indigo-500 animate-pulse">{t('expense.fetching')}</span>}
           </label>
           <input
             type="number"
@@ -223,7 +238,7 @@ export function AddExpensePage() {
           />
           {amount && <p className="text-xs text-slate-500 mt-1">= {formatCurrency(parseFloat(amount) * parseFloat(rateToBase || '1'), baseCurrency)}</p>}
           {!fetchingRate && rateToBase === '1' && currency !== '' && (
-            <p className="text-xs text-amber-500 mt-1">⚠️ Could not fetch rate. Enter manually or try again when online.</p>
+            <p className="text-xs text-amber-500 mt-1">{t('expense.rateWarning')}</p>
           )}
         </div>
       )}
@@ -274,7 +289,7 @@ export function AddExpensePage() {
 
       {/* Receipt photo (optional) */}
       <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Receipt (optional)</label>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.receipt')}</label>
         <input
           type="file"
           accept="image/*"
@@ -288,7 +303,8 @@ export function AddExpensePage() {
         />
       </div>
 
-      {/* Paid By */}
+      {/* Paid By - only relevant for pocket expenses */}
+      {paidFrom === 'pocket' && (
       <div>
         <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.paidBy')}</label>
         <div className="mt-1 flex flex-wrap gap-2">
@@ -307,10 +323,12 @@ export function AddExpensePage() {
           ))}
         </div>
       </div>
+      )}
 
       {/* Paid From */}
+      {hasPool ? (
       <div>
-        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Paid from</label>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('expense.paidFrom')}</label>
         <div className="mt-1 flex gap-2">
           <button
             onClick={() => setPaidFrom('pool')}
@@ -320,7 +338,7 @@ export function AddExpensePage() {
                 : 'border-slate-200 dark:border-slate-700'
             }`}
           >
-            💰 Pool
+            {t('expense.poolOption')}
           </button>
           <button
             onClick={() => setPaidFrom('pocket')}
@@ -330,13 +348,18 @@ export function AddExpensePage() {
                 : 'border-slate-200 dark:border-slate-700'
             }`}
           >
-            👛 Own pocket
+            {t('expense.pocketOption')}
           </button>
         </div>
         <p className="text-[10px] text-slate-400 mt-1">
-          {paidFrom === 'pool' ? 'Paid using group deposits' : 'Paid from personal money (will be reimbursed)'}
+          {paidFrom === 'pool' ? t('expense.paidFromPool') : t('expense.paidFromPocket')}
         </p>
       </div>
+      ) : (
+      <div className="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-xs text-slate-500">
+        {t('expense.noPoolHint')}
+      </div>
+      )}
 
       {/* Split Type */}
       <div>

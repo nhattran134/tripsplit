@@ -28,7 +28,7 @@ export function calculateBalances(
   for (const deposit of deposits) {
     if (deposit.deleted_at) continue
     const current = balanceMap.get(deposit.member_id) ?? 0
-    balanceMap.set(deposit.member_id, current + deposit.amount * deposit.rate_to_base)
+    balanceMap.set(deposit.member_id, current + Number(deposit.amount) * Number(deposit.rate_to_base))
   }
 
   // Credit payers who paid from their own pocket (not from pool)
@@ -36,7 +36,7 @@ export function calculateBalances(
     if (expense.deleted_at) continue
     if (expense.paid_from === 'pocket') {
       const current = balanceMap.get(expense.member_id) ?? 0
-      balanceMap.set(expense.member_id, current + expense.amount * expense.rate_to_base)
+      balanceMap.set(expense.member_id, current + Number(expense.amount) * Number(expense.rate_to_base))
     }
   }
 
@@ -44,7 +44,7 @@ export function calculateBalances(
   for (const split of expenseSplits) {
     const current = balanceMap.get(split.member_id)
     if (current === undefined) continue
-    balanceMap.set(split.member_id, current - split.share_amount)
+    balanceMap.set(split.member_id, current - Number(split.share_amount))
   }
 
   // Account for settlements already made
@@ -53,8 +53,8 @@ export function calculateBalances(
     const fromBal = balanceMap.get(settlement.from_member_id) ?? 0
     const toBal = balanceMap.get(settlement.to_member_id) ?? 0
     // from_member paid to_member, so from's debt decreases, to's credit decreases
-    balanceMap.set(settlement.from_member_id, fromBal + settlement.amount)
-    balanceMap.set(settlement.to_member_id, toBal - settlement.amount)
+    balanceMap.set(settlement.from_member_id, fromBal + Number(settlement.amount))
+    balanceMap.set(settlement.to_member_id, toBal - Number(settlement.amount))
   }
 
   // Round each member's net
@@ -80,24 +80,46 @@ export function calculateBalances(
 
 /**
  * Greedy debt simplification.
- * Produces at most N-1 transfers (where N = members with non-zero balance).
- * Note: True minimum-transfer count is NP-hard. Greedy is near-optimal and O(n log n).
+ * Members in the same group are consolidated (no intra-group transfers).
+ * Produces at most N-1 transfers (where N = groups/individuals with non-zero balance).
  */
 export function simplifyDebts(balances: BalanceEntry[], members: Member[]): Transfer[] {
   const EPSILON = 0.005
   const transfers: Transfer[] = []
 
-  const creditors = balances
-    .filter((b) => b.net >= EPSILON)
-    .map((b) => ({ ...b }))
+  // Consolidate balances by group
+  // Members with same group_id merge into one balance (represented by first member)
+  const groupMap = new Map<string, { representative: Member; net: number }>()
+  
+  for (const b of balances) {
+    const member = members.find((m) => m.id === b.memberId)
+    if (!member) continue
+    
+    const groupKey = member.group_id || `individual_${member.id}`
+    const existing = groupMap.get(groupKey)
+    
+    if (existing) {
+      existing.net += b.net
+    } else {
+      groupMap.set(groupKey, { representative: member, net: b.net })
+    }
+  }
+
+  // Round consolidated balances
+  const consolidated = [...groupMap.values()].map(g => ({
+    ...g,
+    net: Math.round(g.net * 100) / 100,
+  }))
+
+  const creditors = consolidated
+    .filter((g) => g.net >= EPSILON)
+    .map((g) => ({ ...g }))
     .sort((a, b) => b.net - a.net)
 
-  const debtors = balances
-    .filter((b) => b.net <= -EPSILON)
-    .map((b) => ({ ...b, net: Math.abs(b.net) }))
+  const debtors = consolidated
+    .filter((g) => g.net <= -EPSILON)
+    .map((g) => ({ ...g, net: Math.abs(g.net) }))
     .sort((a, b) => b.net - a.net)
-
-  const memberMap = new Map(members.map((m) => [m.id, m]))
 
   let i = 0
   let j = 0
@@ -108,12 +130,7 @@ export function simplifyDebts(balances: BalanceEntry[], members: Member[]): Tran
     const transferAmount = Math.round(Math.min(debtor.net, creditor.net) * 100) / 100
 
     if (transferAmount >= EPSILON) {
-      const fromMember = memberMap.get(debtor.memberId)
-      const toMember = memberMap.get(creditor.memberId)
-
-      if (fromMember && toMember) {
-        transfers.push({ from: fromMember, to: toMember, amount: transferAmount })
-      }
+      transfers.push({ from: debtor.representative, to: creditor.representative, amount: transferAmount })
     }
 
     debtor.net = Math.round((debtor.net - transferAmount) * 100) / 100

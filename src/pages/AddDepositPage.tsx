@@ -140,8 +140,8 @@ export function AddDepositPage() {
       {!isSameCurrency && (
         <div>
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Rate (1 {currency} = ? {baseCurrency})
-            {fetchingRate && <span className="ml-2 text-xs text-indigo-500 animate-pulse">fetching...</span>}
+            {t('expense.rateLabel', { from: currency, to: baseCurrency })}
+            {fetchingRate && <span className="ml-2 text-xs text-indigo-500 animate-pulse">{t('expense.fetching')}</span>}
           </label>
           <input
             type="number"

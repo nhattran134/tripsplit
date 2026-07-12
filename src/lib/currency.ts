@@ -11,6 +11,7 @@ export function roundForCurrency(value: number, currency: string): number {
 }
 
 export function formatCurrency(amount: number, currency: string): string {
+  if (!isFinite(amount)) return `0 ${currency}`
   const decimals = getCurrencyDecimals(currency)
   try {
     return new Intl.NumberFormat(undefined, {
@@ -66,6 +67,7 @@ export async function fetchRate(fromCurrency: string, baseCurrency: string): Pro
  * Format amount without currency symbol (for displaying in base currency context)
  */
 export function formatAmount(amount: number, currency: string): string {
+  if (!isFinite(amount)) return '0'
   const decimals = getCurrencyDecimals(currency)
   return new Intl.NumberFormat(undefined, {
     minimumFractionDigits: decimals,

@@ -116,7 +116,7 @@ export function SettingsPage() {
     if (rate) {
       setRateResult(`1 ${rateFrom} = ${rate.toFixed(4)} ${trip.base_currency}`)
     } else {
-      setRateResult('Could not fetch rate. Try again later.')
+      setRateResult(t('settings.rateNotFound'))
     }
     setFetchingRate(false)
   }
@@ -165,14 +165,14 @@ export function SettingsPage() {
             >
               {COMMON_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
-            <p className="text-xs text-slate-400">All amounts shown without currency symbol are in {trip.base_currency}</p>
+            <p className="text-xs text-slate-400">{t('settings.currencyHint', { currency: trip.base_currency })}</p>
           </div>
 
           {/* Exchange Rate Lookup */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="flex items-center gap-2">
               <RefreshCw size={16} className="text-slate-500" />
-              <p className="font-semibold text-sm">Exchange Rate</p>
+              <p className="font-semibold text-sm">{t('settings.exchangeRate')}</p>
             </div>
             <div className="flex gap-2">
               <select
@@ -180,7 +180,7 @@ export function SettingsPage() {
                 onChange={(e) => setRateFrom(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
               >
-                <option value="">From...</option>
+                <option value="">{t('settings.from')}</option>
                 {COMMON_CURRENCIES.filter((c) => c !== trip.base_currency).map((c) => (
                   <option key={c} value={c}>{c}</option>
                 ))}
@@ -190,7 +190,7 @@ export function SettingsPage() {
                 disabled={!rateFrom || fetchingRate}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
-                {fetchingRate ? '...' : 'Get Rate'}
+                {fetchingRate ? '...' : t('settings.getRate')}
               </button>
             </div>
             {rateResult && (
@@ -198,14 +198,14 @@ export function SettingsPage() {
                 {rateResult}
               </p>
             )}
-            <p className="text-xs text-slate-400">Mid-market rate. Supports VND, THB, JPY, USD, EUR and 150+ currencies.</p>
+            <p className="text-xs text-slate-400">{t('settings.rateHint')}</p>
           </div>
 
           {/* Export */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
             <div className="flex items-center gap-2">
               <Download size={16} className="text-slate-500" />
-              <p className="font-semibold text-sm">Export</p>
+              <p className="font-semibold text-sm">{t('settings.export')}</p>
             </div>
             <div className="flex gap-2">
               <button
@@ -218,7 +218,7 @@ export function SettingsPage() {
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
               >
                 <FileSpreadsheet size={16} />
-                CSV / Excel
+                {t('settings.csvExcel')}
               </button>
               <button
                 onClick={() => {
@@ -235,10 +235,10 @@ export function SettingsPage() {
                 }`}
               >
                 <Share2 size={16} />
-                {copiedId === 'text-export' ? '✓ Copied!' : 'Share Text'}
+                {copiedId === 'text-export' ? t('settings.copied') : t('settings.shareText')}
               </button>
             </div>
-            <p className="text-xs text-slate-400">CSV downloads a file. Share Text copies a summary to clipboard for messaging apps.</p>
+            <p className="text-xs text-slate-400">{t('settings.exportHint')}</p>
           </div>
 
           {/* Language */}
@@ -263,7 +263,7 @@ export function SettingsPage() {
           {/* Trip Management - admin only */}
           {isAdmin && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
-              <p className="font-semibold text-sm">Trip Management</p>
+              <p className="font-semibold text-sm">{t('settings.tripManagement')}</p>
 
               {/* Finalize / Mark Done */}
               {!trip.archived_at && poolBalance > 0 && (
@@ -273,12 +273,12 @@ export function SettingsPage() {
               )}
               {trip.archived_at ? (
                 <div className="text-center py-2">
-                  <p className="text-sm text-green-600 font-medium">✓ Trip is finalized</p>
+                  <p className="text-sm text-green-600 font-medium">{t('settings.tripFinalized')}</p>
                 </div>
               ) : (
                 <button
                   onClick={async () => {
-                    if (!confirm('Mark this trip as done? Members can still view but not add new transactions.')) return
+                    if (!confirm(t('settings.finalizeConfirm'))) return
                     const { error } = await supabase
                       .from('trips')
                       .update({ archived_at: new Date().toISOString() })
@@ -289,7 +289,7 @@ export function SettingsPage() {
                   }}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-green-300 text-green-700 dark:text-green-400 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 transition-colors"
                 >
-                  ✓ Finalize Trip
+                  {t('settings.finalizeTrip')}
                 </button>
               )}
 
@@ -307,14 +307,14 @@ export function SettingsPage() {
                   }}
                   className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-indigo-300 text-indigo-700 dark:text-indigo-400 text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
                 >
-                  ↺ Reopen Trip
+                  {t('settings.reopenTrip')}
                 </button>
               )}
 
               {/* Reset Trip */}
               <button
                 onClick={async () => {
-                  const confirmation = prompt('Type "RESET" to clear all expenses, deposits, and settlements (members are kept):')
+                  const confirmation = prompt(t('settings.resetConfirm'))
                   if (confirmation !== 'RESET') return
                   // Clear games
                   await supabase.from('gomoku_challenges').delete().eq('trip_id', tripId)
@@ -334,21 +334,21 @@ export function SettingsPage() {
                 }}
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-orange-300 text-orange-700 dark:text-orange-400 text-sm font-medium hover:bg-orange-50 dark:hover:bg-orange-900/20 transition-colors"
               >
-                ↺ Reset Trip (keep members)
+                {t('settings.resetTrip')}
               </button>
 
-              <p className="text-[10px] text-slate-400">Finalize marks the trip as done. Reset clears all financial data but keeps members.</p>
+              <p className="text-[10px] text-slate-400">{t('settings.managementHint')}</p>
             </div>
           )}
 
           {/* Danger Zone - admin only */}
           {isAdmin && (
             <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-red-200 dark:border-red-900 space-y-3">
-              <p className="font-semibold text-sm text-red-600">Danger Zone</p>
+              <p className="font-semibold text-sm text-red-600">{t('settings.dangerZone')}</p>
 
               <button
                 onClick={async () => {
-                  if (!confirm('Archive this trip? It will be hidden from all members.')) return
+                  if (!confirm(t('settings.archiveConfirm'))) return
                   const { error } = await supabase
                     .from('trips')
                     .update({ archived_at: new Date().toISOString() })
@@ -361,12 +361,12 @@ export function SettingsPage() {
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-amber-300 text-amber-700 dark:text-amber-400 text-sm font-medium hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
               >
                 <Archive size={16} />
-                Archive Trip
+                {t('settings.archiveTrip')}
               </button>
 
               <button
                 onClick={async () => {
-                  const confirmation = prompt('Type "DELETE" to permanently delete this trip and all its data:')
+                  const confirmation = prompt(t('settings.deleteConfirm'))
                   if (confirmation !== 'DELETE') return
                   const { error } = await supabase
                     .from('trips')
@@ -380,24 +380,24 @@ export function SettingsPage() {
                 className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
               >
                 <Trash2 size={16} />
-                Delete Trip Permanently
+                {t('settings.deleteTrip')}
               </button>
 
-              <p className="text-[10px] text-slate-400">Archive hides the trip. Delete removes all data permanently (cannot be undone).</p>
+              <p className="text-[10px] text-slate-400">{t('settings.dangerHint')}</p>
             </div>
           )}
 
           {/* Logout / Switch Member */}
           <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
-            <p className="font-semibold text-sm">Account</p>
+            <p className="font-semibold text-sm">{t('settings.account')}</p>
             <p className="text-xs text-slate-500">
-              Logged in as: <span className="font-medium text-slate-700 dark:text-slate-300">
+              {t('settings.loggedInAs')} <span className="font-medium text-slate-700 dark:text-slate-300">
                 {members.find((m) => m.auth_uid === currentAuthUid)?.name || 'Unknown'}
               </span>
             </p>
             <button
               onClick={() => {
-                if (confirm('Log out? You will need your member PIN to log back in.')) {
+                if (confirm(t('settings.logOutConfirm'))) {
                   supabase.auth.signOut()
                   removeTrip(tripId!)
                   localStorage.removeItem('tripsplit-store')
@@ -407,9 +407,9 @@ export function SettingsPage() {
               }}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              Log Out
+              {t('settings.logOut')}
             </button>
-            <p className="text-[10px] text-slate-400">To switch to a different member, log out first, then rejoin with the invite link or trip code and enter the other member's PIN.</p>
+            <p className="text-[10px] text-slate-400">{t('settings.logOutHint')}</p>
           </div>
         </div>
       )}

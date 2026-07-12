@@ -285,13 +285,13 @@ export function HomePage() {
             onClick={() => setShowJoin(true)}
             className="border border-indigo-600 text-indigo-600 px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
           >
-            Join
+            {t('home.join')}
           </button>
           <button
             onClick={() => setShowCreate(true)}
             className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
           >
-            + New
+            {t('home.new')}
           </button>
         </div>
       </div>
@@ -303,8 +303,8 @@ export function HomePage() {
       >
         <span className="text-2xl">🎮</span>
         <div className="text-left">
-          <p className="font-semibold text-sm">Play Games</p>
-          <p className="text-xs text-slate-500">Create a game room and invite anyone</p>
+          <p className="font-semibold text-sm">{t('home.playGames')}</p>
+          <p className="text-xs text-slate-500">{t('home.playGamesHint')}</p>
         </div>
       </button>
 
@@ -354,7 +354,7 @@ export function HomePage() {
             {/* Avatar picker */}
             {memberName.trim() && (
               <div>
-                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Choose your avatar</label>
+                <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('members.chooseAvatar')}</label>
                 <div className="mt-2">
                   <AvatarPicker name={memberName} selected={avatarStyle} seed={avatarSeed} onSelect={(style, seed) => { setAvatarStyle(style); setAvatarSeed(seed) }} />
                 </div>
@@ -385,14 +385,14 @@ export function HomePage() {
                 onClick={() => setShowCreate(false)}
                 className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleCreate}
                 disabled={loading}
                 className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
               >
-                {loading ? 'Creating...' : 'Create'}
+                {loading ? t('home.creating') : t('home.create')}
               </button>
             </div>
           </div>
@@ -409,7 +409,7 @@ export function HomePage() {
             {joinStep === 'code' && (
               <>
                 <div>
-                  <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Trip Code</label>
+                  <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('join.tripCode')}</label>
                   <input
                     type="text"
                     value={joinCode}
@@ -428,14 +428,14 @@ export function HomePage() {
                     onClick={() => { setShowJoin(false); setError(''); setJoinStep('code'); setJoinTrip(null); setJoinMembers([]); setJoinSelectedMember(null) }}
                     className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 font-medium"
                   >
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={handleLookupCode}
                     disabled={loading}
                     className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                   >
-                    {loading ? '...' : 'Next'}
+                    {loading ? '...' : t('join.next')}
                   </button>
                 </div>
               </>
@@ -447,7 +447,7 @@ export function HomePage() {
                 {/* Existing members to pick */}
                 {joinMembers.length > 0 && (
                   <div>
-                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">I am...</p>
+                    <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2">{t('join.iAm')}</p>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                       {joinMembers.map((m: any) => (
                         <button
@@ -461,7 +461,7 @@ export function HomePage() {
                         >
                           <Avatar name={m.name} style={m.avatar_style} seed={m.avatar_seed} size={32} className="shrink-0" />
                           <span className="font-medium text-sm">{m.name}</span>
-                          {!m.claimed && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-auto">Unclaimed</span>}
+                          {!m.claimed && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 py-0.5 rounded ml-auto">{t('join.unclaimed')}</span>}
                         </button>
                       ))}
                     </div>
@@ -471,28 +471,28 @@ export function HomePage() {
                 {/* Token input when claiming */}
                 {joinSelectedMember && (
                   <div>
-                    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Member PIN</label>
+                    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('join.memberPin')}</label>
                     <input
                       type="text"
                       value={joinToken}
                       onChange={(e) => setJoinToken(e.target.value.toUpperCase())}
-                      placeholder="4-char PIN"
+                      placeholder={t('join.pinPlaceholder')}
                       maxLength={4}
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-center text-lg font-mono tracking-widest uppercase"
                     />
-                    <p className="text-[10px] text-slate-400 mt-1">Ask the trip admin for your PIN</p>
+                    <p className="text-[10px] text-slate-400 mt-1">{t('join.pinHint')}</p>
                   </div>
                 )}
 
                 {/* New name input (when not claiming) */}
                 {!joinSelectedMember && (
                   <div>
-                    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">Or enter a new name</label>
+                    <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('join.newName')}</label>
                     <input
                       type="text"
                       value={joinName}
                       onChange={(e) => setJoinName(e.target.value)}
-                      placeholder="Your name"
+                      placeholder={t('join.namePlaceholderShort')}
                       className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
                   </div>
@@ -505,14 +505,14 @@ export function HomePage() {
                     onClick={() => { setJoinStep('code'); setError(''); setJoinSelectedMember(null); setJoinToken('') }}
                     className="flex-1 px-4 py-2 rounded-lg border border-slate-300 dark:border-slate-600 font-medium"
                   >
-                    Back
+                    {t('join.back')}
                   </button>
                   <button
                     onClick={handleJoinByCode}
                     disabled={loading}
                     className="flex-1 px-4 py-2 rounded-lg bg-indigo-600 text-white font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors"
                   >
-                    {loading ? '...' : 'Join'}
+                    {loading ? '...' : t('join.join')}
                   </button>
                 </div>
               </>
