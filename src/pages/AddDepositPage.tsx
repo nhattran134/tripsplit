@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
 import { formatCurrency, COMMON_CURRENCIES, fetchRate } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
+import { MoneyInput } from '@/components/common/MoneyInput'
 import type { Member } from '@/types'
 
 export function AddDepositPage() {
@@ -102,12 +103,11 @@ export function AddDepositPage() {
       <div className="flex gap-2">
         <div className="flex-1">
           <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('deposit.amount')}</label>
-          <input
-            type="number"
-            inputMode="decimal"
+          <MoneyInput
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            placeholder="0.00"
+            onChange={setAmount}
+            currency={currency || baseCurrency}
+            placeholder="0"
             className="mt-1 w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-transparent focus:ring-2 focus:ring-indigo-500 outline-none text-lg"
             autoFocus
           />

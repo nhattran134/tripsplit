@@ -316,12 +316,18 @@ export function SettingsPage() {
                 onClick={async () => {
                   const confirmation = prompt('Type "RESET" to clear all expenses, deposits, and settlements (members are kept):')
                   if (confirmation !== 'RESET') return
+                  // Clear games
+                  await supabase.from('gomoku_challenges').delete().eq('trip_id', tripId)
+                  await supabase.from('gomoku_games').delete().eq('trip_id', tripId)
+                  // Clear financials
                   await supabase.from('settlements').delete().eq('trip_id', tripId)
                   await supabase.from('expense_splits').delete().in('expense_id',
                     (await supabase.from('expenses').select('id').eq('trip_id', tripId)).data?.map((e: any) => e.id) || []
                   )
                   await supabase.from('expenses').delete().eq('trip_id', tripId)
                   await supabase.from('deposits').delete().eq('trip_id', tripId)
+                  // Clean up soft-deleted members (no longer needed after reset)
+                  await supabase.from('members').delete().eq('trip_id', tripId).not('deleted_at', 'is', null)
                   // Reopen if finalized
                   await supabase.from('trips').update({ archived_at: null }).eq('id', tripId)
                   queryClient.invalidateQueries()
