@@ -150,6 +150,7 @@
     "reasonDeposited": "deposited",
     "reasonPaid": "paid (pocket)",
     "reasonShare": "share of expenses",
+    "poolInsufficient": "Pool only has {{amount}} — not enough for this settlement via pool",
     "poolSurplus": "Pool Surplus",
     "poolSurplusHint": "Leftover from group pool - refund to depositors",
     "refundAmount": "Refund"

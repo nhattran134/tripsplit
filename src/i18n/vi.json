@@ -150,6 +150,7 @@
     "reasonDeposited": "đã nạp",
     "reasonPaid": "đã trả (túi riêng)",
     "reasonShare": "phần chi tiêu",
+    "poolInsufficient": "Quỹ chỉ còn {{amount}} — không đủ để thanh toán qua quỹ",
     "poolSurplus": "Dư quỹ",
     "poolSurplusHint": "Tiền dư từ quỹ chung - hoàn lại cho người nạp",
     "refundAmount": "Hoàn lại"
