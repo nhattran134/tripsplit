@@ -248,16 +248,18 @@ export function TripDashboardPage() {
                 const memberPoolShares = expenseSplits
                   .filter(s => s.member_id === m.id && expenses.find(e => e.id === s.expense_id && e.paid_from === 'pool'))
                   .reduce((sum, s) => sum + (Number(s.share_amount) || 0), 0)
+                // via_pool settlements where this member is the payer (from) = pool money leaving
+                const memberViaPool = settlements.filter(s => !s.deleted_at && s.method === 'via_pool' && s.from_member_id === m.id)
+                  .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
                 
                 if (existing) {
                   existing.deposited += memberDeposits
-                  existing.spent += memberPoolShares
+                  existing.spent += memberPoolShares + memberViaPool
                 } else {
-                  // Find group partner names
                   const groupMembers = m.group_id 
                     ? activeMembers.filter(om => om.group_id === m.group_id).map(om => om.name)
                     : [m.name]
-                  groupMap.set(key, { name: groupMembers.join(' & '), deposited: memberDeposits, spent: memberPoolShares })
+                  groupMap.set(key, { name: groupMembers.join(' & '), deposited: memberDeposits, spent: memberPoolShares + memberViaPool })
                 }
               }
 
