@@ -245,7 +245,7 @@ export function TripDashboardPage() {
 
       {/* Pool Share Breakdown */}
       {poolBalance > 0 && totalDeposits > 0 && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+        <div className="glass-card rounded-xl p-4">
           <h2 className="font-semibold mb-1 text-sm">{t('dashboard.poolShare')}</h2>
           <p className="text-[10px] text-slate-500 mb-3">{t('dashboard.poolShareHint')}</p>
           <div className="space-y-2">
@@ -307,7 +307,7 @@ export function TripDashboardPage() {
       )}
 
       {/* Member Balances */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="glass-card rounded-xl p-4">
         <h2 className="font-semibold mb-3">{t('dashboard.memberBalances')}</h2>
         <div className="space-y-2">
           {members.filter(m => !m.deleted_at).map((member) => {
@@ -347,7 +347,7 @@ export function TripDashboardPage() {
         const maxAmount = sorted[0]?.[1] || 1
 
         return (
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="glass-card rounded-xl p-4">
             <h2 className="font-semibold mb-3">{t('dashboard.spendingByCategory')}</h2>
             <div className="space-y-2.5">
               {sorted.map(([cat, amount]) => {
@@ -376,7 +376,7 @@ export function TripDashboardPage() {
       })()}
 
       {/* Share Link */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="glass-card rounded-xl p-4">
         <h2 className="font-semibold mb-3">{t('dashboard.inviteOthers')}</h2>
 
         {/* Short Code - prominent */}
@@ -425,7 +425,7 @@ export function TripDashboardPage() {
       </div>
 
       {/* Games */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="glass-card rounded-xl p-4">
         <h2 className="font-semibold mb-2">{t('dashboard.games')}</h2>
         <button
           onClick={() => navigate(`/trip/${tripId}/games/gomoku`)}
@@ -441,7 +441,7 @@ export function TripDashboardPage() {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+      <div className="glass-card rounded-xl p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold">{t('dashboard.recent')}</h2>
           <button

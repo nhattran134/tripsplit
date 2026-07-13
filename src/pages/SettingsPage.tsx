@@ -157,7 +157,7 @@ export function SettingsPage() {
       {trip && (
         <div className="space-y-4">
           {/* Trip Info */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="glass-card rounded-xl p-4 space-y-3">
             <div>
               <p className="text-sm text-slate-500">{t('settings.tripName')}</p>
               <p className="font-medium">{trip.name}</p>
@@ -175,7 +175,7 @@ export function SettingsPage() {
           </div>
 
           {/* Base Currency Setting */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="glass-card rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Globe size={16} className="text-slate-500" />
               <p className="font-semibold text-sm">{t('settings.baseCurrency')}</p>
@@ -192,7 +192,7 @@ export function SettingsPage() {
 
           {/* Budget Holder */}
           {isAdmin && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+            <div className="glass-card rounded-xl p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <Wallet size={16} className="text-slate-500" />
                 <p className="font-semibold text-sm">{t('settings.budgetHolder')}</p>
@@ -210,7 +210,7 @@ export function SettingsPage() {
           )}
 
           {/* Exchange Rate Lookup */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="glass-card rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <RefreshCw size={16} className="text-slate-500" />
               <p className="font-semibold text-sm">{t('settings.exchangeRate')}</p>
@@ -243,7 +243,7 @@ export function SettingsPage() {
           </div>
 
           {/* Export */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="glass-card rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Download size={16} className="text-slate-500" />
               <p className="font-semibold text-sm">{t('settings.export')}</p>
@@ -283,7 +283,7 @@ export function SettingsPage() {
           </div>
 
           {/* Language */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="glass-card rounded-xl p-4">
             <p className="font-semibold text-sm mb-2">{t('settings.language')}</p>
             <div className="flex gap-2">
               <button
@@ -302,7 +302,7 @@ export function SettingsPage() {
           </div>
 
           {/* Theme / Dark Mode */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div className="glass-card rounded-xl p-4">
             <p className="font-semibold text-sm mb-2">{t('settings.theme')}</p>
             <div className="flex gap-2">
               {(['system', 'light', 'dark'] as const).map((mode) => {
@@ -329,7 +329,7 @@ export function SettingsPage() {
 
           {/* Trip Management - admin only */}
           {isAdmin && (
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+            <div className="glass-card rounded-xl p-4 space-y-3">
               <p className="font-semibold text-sm">{t('settings.tripManagement')}</p>
 
               {/* Finalize / Mark Done */}
@@ -455,7 +455,7 @@ export function SettingsPage() {
           )}
 
           {/* Logout / Switch Member */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="glass-card rounded-xl p-4 space-y-3">
             <p className="font-semibold text-sm">{t('settings.account')}</p>
             <p className="text-xs text-slate-500">
               {t('settings.loggedInAs')} <span className="font-medium text-slate-700 dark:text-slate-300">

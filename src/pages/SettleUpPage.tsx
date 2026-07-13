@@ -282,7 +282,7 @@ export function SettleUpPage() {
             return (
               <div
                 key={`${transfer.from.id}-${transfer.to.id}`}
-                className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700"
+                className="glass-card rounded-xl p-4"
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">

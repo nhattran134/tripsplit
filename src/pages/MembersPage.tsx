@@ -221,7 +221,7 @@ export function MembersPage() {
 
       {/* Add Member Modal */}
       {showAdd && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700 space-y-3">
+        <div className="glass-card rounded-xl p-4 space-y-3">
           <p className="font-medium text-sm">{t('members.addHint')}</p>
           <input
             type="text"
@@ -288,7 +288,7 @@ export function MembersPage() {
 
       <div className="space-y-3">
         {memberStats.map(({ member, totalDeposited, totalOwed, net }) => (
-          <div key={member.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+          <div key={member.id} className="glass-card rounded-xl p-4">
             <div className="flex items-center gap-3 mb-3">
               <button
                 onClick={() => member.auth_uid === currentAuthUid ? setEditingAvatar(editingAvatar === member.id ? null : member.id) : undefined}

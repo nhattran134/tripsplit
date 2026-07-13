@@ -11,10 +11,10 @@ export function Shell() {
   useOfflineSync()
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="min-h-screen app-bg text-slate-900 dark:text-slate-100">
       <OfflineBadge />
       <ToastContainer />
-      <main className={`px-4 max-w-lg mx-auto ${isTripRoute ? 'pb-safe' : 'pb-8'}`} style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}>
+      <main className={`relative z-[1] px-4 max-w-lg mx-auto ${isTripRoute ? 'pb-safe' : 'pb-8'}`} style={{ paddingTop: 'calc(env(safe-area-inset-top, 24px) + 12px)' }}>
         <Outlet />
       </main>
       {isTripRoute && <BottomNav />}
