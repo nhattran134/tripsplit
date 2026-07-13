@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, useRouteError } from 'react-router-dom'
 import { Shell } from '@/components/layout/Shell'
 
 const HomePage = lazy(() => import('@/pages/HomePage').then(m => ({ default: m.HomePage })))
@@ -15,6 +15,50 @@ const GomokuPage = lazy(() => import('@/pages/GomokuPage').then(m => ({ default:
 const GameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.GameRoomPage })))
 const CreateGameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.CreateGameRoomPage })))
 const EditExpensePage = lazy(() => import('@/pages/EditExpensePage').then(m => ({ default: m.EditExpensePage })))
+
+function RouteErrorFallback() {
+  const error = useRouteError() as Error | undefined
+  
+  const handleClearAndReload = () => {
+    try {
+      localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE')
+      localStorage.removeItem('tripsplit-auth')
+      if ('caches' in window) {
+        caches.keys().then(keys => keys.forEach(key => caches.delete(key)))
+      }
+    } catch (e) { /* ignore */ }
+    window.location.href = '/'
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-slate-900">
+      <div className="max-w-sm w-full text-center space-y-4">
+        <p className="text-4xl">😵</p>
+        <h1 className="text-lg font-bold text-slate-800 dark:text-slate-200">Something went wrong</h1>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          The app encountered an error. This is usually fixed by clearing the cache.
+        </p>
+        {error?.message && (
+          <p className="text-xs text-slate-400 bg-slate-100 dark:bg-slate-800 rounded p-2 font-mono break-all">
+            {error.message}
+          </p>
+        )}
+        <button
+          onClick={handleClearAndReload}
+          className="w-full py-3 rounded-xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors"
+        >
+          Clear Cache & Reload
+        </button>
+        <button
+          onClick={() => window.location.href = '/'}
+          className="w-full py-2 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 text-sm"
+        >
+          Go Home
+        </button>
+      </div>
+    </div>
+  )
+}
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -34,6 +78,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <Shell />,
+    errorElement: <RouteErrorFallback />,
     children: [
       { index: true, element: <SuspenseWrapper><HomePage /></SuspenseWrapper> },
       { path: 'trip/:tripId', element: <SuspenseWrapper><TripDashboardPage /></SuspenseWrapper> },
@@ -47,7 +92,7 @@ export const router = createBrowserRouter([
       { path: 'trip/:tripId/games/gomoku', element: <SuspenseWrapper><GomokuPage /></SuspenseWrapper> },
     ],
   },
-  { path: '/t/:inviteCode', element: <SuspenseWrapper><JoinTripPage /></SuspenseWrapper> },
-  { path: '/play/new', element: <SuspenseWrapper><CreateGameRoomPage /></SuspenseWrapper> },
-  { path: '/play/:roomCode', element: <SuspenseWrapper><GameRoomPage /></SuspenseWrapper> },
+  { path: '/t/:inviteCode', element: <SuspenseWrapper><JoinTripPage /></SuspenseWrapper>, errorElement: <RouteErrorFallback /> },
+  { path: '/play/new', element: <SuspenseWrapper><CreateGameRoomPage /></SuspenseWrapper>, errorElement: <RouteErrorFallback /> },
+  { path: '/play/:roomCode', element: <SuspenseWrapper><GameRoomPage /></SuspenseWrapper>, errorElement: <RouteErrorFallback /> },
 ])
