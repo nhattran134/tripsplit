@@ -14,6 +14,7 @@ const SettingsPage = lazy(() => import('@/pages/SettingsPage').then(m => ({ defa
 const GomokuPage = lazy(() => import('@/pages/GomokuPage').then(m => ({ default: m.GomokuPage })))
 const GameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.GameRoomPage })))
 const CreateGameRoomPage = lazy(() => import('@/pages/GameRoomPage').then(m => ({ default: m.CreateGameRoomPage })))
+const EditExpensePage = lazy(() => import('@/pages/EditExpensePage').then(m => ({ default: m.EditExpensePage })))
 
 function SuspenseWrapper({ children }: { children: React.ReactNode }) {
   return (
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { index: true, element: <SuspenseWrapper><HomePage /></SuspenseWrapper> },
       { path: 'trip/:tripId', element: <SuspenseWrapper><TripDashboardPage /></SuspenseWrapper> },
       { path: 'trip/:tripId/expense/new', element: <SuspenseWrapper><AddExpensePage /></SuspenseWrapper> },
+      { path: 'trip/:tripId/expense/:expenseId/edit', element: <SuspenseWrapper><EditExpensePage /></SuspenseWrapper> },
       { path: 'trip/:tripId/deposit/new', element: <SuspenseWrapper><AddDepositPage /></SuspenseWrapper> },
       { path: 'trip/:tripId/members', element: <SuspenseWrapper><MembersPage /></SuspenseWrapper> },
       { path: 'trip/:tripId/settle', element: <SuspenseWrapper><SettleUpPage /></SuspenseWrapper> },

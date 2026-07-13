@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +7,7 @@ import { calculateBalances, simplifyDebts, calculatePoolReimbursements } from '@
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { Avatar } from '@/components/common/Avatar'
+import { showToast } from '@/components/common/Toast'
 import type { Member, Deposit, Expense, ExpenseSplit, Settlement } from '@/types'
 
 export function SettleUpPage() {
@@ -18,6 +19,7 @@ export function SettleUpPage() {
   const [settleMethods, setSettleMethods] = useState<Record<number, 'direct' | 'via_pool'>>({})
   const [settleAmounts, setSettleAmounts] = useState<Record<number, string>>({})
   const [showIntraGroup, setShowIntraGroup] = useState(false)
+  const submittingRef = useRef(false)
 
   const { data: trip } = useQuery({
     queryKey: ['trip', tripId],
@@ -90,6 +92,8 @@ export function SettleUpPage() {
 
   const settleMutation = useMutation({
     mutationFn: async (params: { from: Member; to: Member; amount: number; method: 'direct' | 'via_pool' }) => {
+      if (submittingRef.current) return
+      submittingRef.current = true
       const { error } = await supabase.from('settlements').insert({
         id: generateId(),
         trip_id: tripId,
@@ -102,11 +106,16 @@ export function SettleUpPage() {
       if (error) throw new Error(error.message)
     },
     onSuccess: () => {
+      submittingRef.current = false
       queryClient.invalidateQueries({ queryKey: ['settlements', tripId] })
       queryClient.invalidateQueries({ queryKey: ['deposits', tripId] })
       queryClient.invalidateQueries({ queryKey: ['expenses', tripId] })
       queryClient.invalidateQueries({ queryKey: ['expense_splits', tripId] })
       setSettlingIndex(null)
+      showToast(t('settle.settled'))
+    },
+    onError: () => {
+      submittingRef.current = false
     },
   })
 
@@ -188,7 +197,6 @@ export function SettleUpPage() {
   const baseCurrency = trip?.base_currency || 'VND'
   const poolBalance = deposits.reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
     - expenses.filter(e => e.paid_from === 'pool').reduce((s, e) => s + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
-    - settlements.filter(s => s.method === 'via_pool' && !s.deleted_at).reduce((s, st) => s + (Number(st.amount) || 0), 0)
 
   // Pool surplus calculation for refund
   const poolSurplus = useMemo(() => {
@@ -410,6 +418,7 @@ export function SettleUpPage() {
 
                 <button
                   onClick={() => {
+                    if (submittingRef.current) return
                     setSettlingIndex(index)
                     settleMutation.mutate({
                       from: transfer.from,

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -19,6 +19,7 @@ export function AddDepositPage() {
   const [rateToBase, setRateToBase] = useState('1')
   const [fetchingRate, setFetchingRate] = useState(false)
   const [memberId, setMemberId] = useState('')
+  const [depositFor, setDepositFor] = useState('')
   const [note, setNote] = useState('')
   const [error, setError] = useState('')
 
@@ -43,6 +44,23 @@ export function AddDepositPage() {
     },
   })
 
+  const { data: currentSession } = useQuery({
+    queryKey: ['session'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession()
+      return data.session
+    },
+  })
+  const currentAuthUid = currentSession?.user?.id
+
+  // Default depositFor to current user
+  useEffect(() => {
+    if (currentAuthUid && members.length > 0 && !depositFor) {
+      const myMember = members.find(m => m.auth_uid === currentAuthUid)
+      if (myMember) setDepositFor(myMember.id)
+    }
+  }, [currentAuthUid, members, depositFor])
+
   const mutation = useMutation({
     mutationFn: async () => {
       const numAmount = parseFloat(amount)
@@ -50,11 +68,12 @@ export function AddDepositPage() {
       if (!memberId) throw new Error('Select who deposited')
 
       const numRate = parseFloat(rateToBase) || 1
+      const targetMember = depositFor || memberId
 
       const { error } = await supabase.from('deposits').insert({
         id: generateId(),
         trip_id: tripId,
-        member_id: memberId,
+        member_id: targetMember,
         amount: numAmount,
         currency: currency || trip?.base_currency || 'VND',
         rate_to_base: numRate,
@@ -92,6 +111,26 @@ export function AddDepositPage() {
               className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
                 memberId === m.id
                   ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+              }`}
+            >
+              {m.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Deposit for */}
+      <div>
+        <label className="text-sm font-medium text-slate-600 dark:text-slate-300">{t('deposit.depositFor')}</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {members.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => setDepositFor(m.id)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border ${
+                depositFor === m.id
+                  ? 'border-green-500 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                   : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
               }`}
             >

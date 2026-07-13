@@ -79,13 +79,15 @@ export function exportText(data: ExportData): string {
 
   const totalDeposits = deposits.reduce((s, d) => s + Number(d.amount) * Number(d.rate_to_base), 0)
   const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+  const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+  const poolRemaining = totalDeposits - totalPoolExpenses
 
   let text = `📊 ${tripName}\n`
   text += `━━━━━━━━━━━━━━━━━━\n\n`
 
   text += `💰 Total deposited: ${formatAmount(totalDeposits, baseCurrency)} ${baseCurrency}\n`
   text += `💸 Total spent: ${formatAmount(totalExpenses, baseCurrency)} ${baseCurrency}\n`
-  text += `📦 Pool remaining: ${formatAmount(totalDeposits - totalExpenses, baseCurrency)} ${baseCurrency}\n\n`
+  text += `📦 Pool remaining: ${formatAmount(poolRemaining, baseCurrency)} ${baseCurrency}\n\n`
 
   text += `👥 Balances:\n`
   for (const b of balances) {

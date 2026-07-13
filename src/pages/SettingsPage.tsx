@@ -17,6 +17,14 @@ export function SettingsPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
+  const applyTheme = (mode: 'system' | 'light' | 'dark') => {
+    if (mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
+
   const [fetchingRate, setFetchingRate] = useState(false)
   const [rateFrom, setRateFrom] = useState('')
   const [rateResult, setRateResult] = useState<string | null>(null)
@@ -289,6 +297,32 @@ export function SettingsPage() {
               >
                 🇻🇳 Tiếng Việt
               </button>
+            </div>
+          </div>
+
+          {/* Theme / Dark Mode */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700">
+            <p className="font-semibold text-sm mb-2">{t('settings.theme')}</p>
+            <div className="flex gap-2">
+              {(['system', 'light', 'dark'] as const).map((mode) => {
+                const current = localStorage.getItem('theme-preference') || 'system'
+                return (
+                  <button
+                    key={mode}
+                    onClick={() => {
+                      localStorage.setItem('theme-preference', mode)
+                      applyTheme(mode)
+                    }}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
+                      current === mode
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {mode === 'system' ? t('settings.themeSystem') : mode === 'light' ? t('settings.themeLight') : t('settings.themeDark')}
+                  </button>
+                )
+              })}
             </div>
           </div>
 

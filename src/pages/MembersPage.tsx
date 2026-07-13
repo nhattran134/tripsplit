@@ -117,8 +117,7 @@ export function MembersPage() {
   // Pool surplus: total deposits - total pool expenses
   const totalDeposits = deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
   const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
-  const viaPoolSettlements = settlements.filter(s => s.method === 'via_pool' && !s.deleted_at).reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
-  const poolSurplus = totalDeposits - totalPoolExpenses - viaPoolSettlements
+  const poolSurplus = totalDeposits - totalPoolExpenses
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {

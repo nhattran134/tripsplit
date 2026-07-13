@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import { ArrowLeft, Receipt, Wallet, Handshake, Undo2 } from 'lucide-react'
+import { ArrowLeft, Receipt, Wallet, Handshake, Undo2, Pencil } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { formatAmount } from '@/lib/currency'
 import type { Member, Deposit, Expense, Settlement } from '@/types'
@@ -85,6 +85,8 @@ export function HistoryPage() {
   const currentAuthUid = currentSession?.user?.id
   const isAdmin = members.some((m) => m.auth_uid === currentAuthUid && m.is_admin)
 
+  const currentMember = members.find(m => m.auth_uid === currentAuthUid)
+
   const undoMutation = useMutation({
     mutationFn: async ({ table, id }: { table: string; id: string }) => {
       const { error } = await supabase
@@ -111,6 +113,7 @@ export function HistoryPage() {
     table: string
     date: string
     member: Member | undefined
+    member_id?: string
     amount: number
     label: string
     sublabel?: string
@@ -129,6 +132,7 @@ export function HistoryPage() {
       table: 'expenses',
       date: e.created_at,
       member: members.find((m) => m.id === e.member_id),
+      member_id: e.member_id,
       amount: Number(e.amount) * Number(e.rate_to_base),
       label: e.description || e.category,
       paid_from: e.paid_from,
@@ -227,6 +231,17 @@ export function HistoryPage() {
                   <span className={`text-sm font-semibold ${getColor(item.type)}`}>
                     {item.type === 'expense' ? '-' : item.type === 'deposit' ? '+' : ''}{formatAmount(item.amount, baseCurrency)}
                   </span>
+                  {item.type === 'expense' && (isAdmin || item.member_id === currentMember?.id) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        navigate(`/trip/${tripId}/expense/${item.id}/edit`)
+                      }}
+                      className="text-indigo-500 hover:text-indigo-700 p-1 rounded border border-indigo-200 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                  )}
                   {isAdmin && (
                     <button
                       onClick={(e) => {
