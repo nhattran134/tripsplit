@@ -529,11 +529,20 @@ export function SettleUpPage() {
             {settlements.map((s) => {
               const from = members.find((m) => m.id === s.from_member_id)
               const to = members.find((m) => m.id === s.to_member_id)
+              const fromGroupName = from?.group_id
+                ? groups.find(g => g.id === from.group_id)?.name || members.filter(m => m.group_id === from.group_id && !m.deleted_at).map(m => m.name).join(' & ')
+                : from?.name
+              const toGroupName = to?.group_id
+                ? groups.find(g => g.id === to.group_id)?.name || members.filter(m => m.group_id === to.group_id && !m.deleted_at).map(m => m.name).join(' & ')
+                : to?.name
               return (
                 <div key={s.id} className="flex items-center justify-between py-2 text-sm border-b border-slate-100 dark:border-slate-700">
-                  <div>
-                    <span>{from?.name} → {to?.name}</span>
-                    <span className="ml-2 text-xs text-slate-400">({s.method === 'via_pool' ? t('settle.methodViaPool') : t('settle.methodDirect')})</span>
+                  <div className="flex items-center gap-2">
+                    {from && <Avatar name={from.name} style={from.avatar_style} seed={from.avatar_seed} size={22} />}
+                    <div>
+                      <span className="font-medium">{fromGroupName} → {toGroupName}</span>
+                      <span className="ml-2 text-xs text-slate-400">({s.method === 'via_pool' ? t('settle.methodViaPool') : t('settle.methodDirect')})</span>
+                    </div>
                   </div>
                   <span className="font-medium">{formatCurrency(Number(s.amount), baseCurrency)}</span>
                 </div>
