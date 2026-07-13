@@ -171,7 +171,7 @@ export function BottomNav() {
                         : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 active:bg-slate-100'
                     }`}
                   >
-                    {amt >= 1000 ? `${(amt/1000).toLocaleString()}k` : amt}
+                    {amt.toLocaleString()}
                   </button>
                 ))
               })()}
