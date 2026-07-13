@@ -67,17 +67,38 @@ export function HomePage() {
     async function syncTrips() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session?.user?.id) return
+      const authUid = session.user.id
 
-      const { data: memberRecords } = await supabase
+      // Find trips via direct auth_uid on member OR via member_sessions
+      const { data: directMembers } = await supabase
         .from('members')
-        .select('trip_id, trips(id, name, invite_code)')
-        .eq('auth_uid', session.user.id)
+        .select('trip_id')
+        .eq('auth_uid', authUid)
         .is('deleted_at', null)
 
-      if (!memberRecords) return
-      for (const rec of memberRecords) {
-        const trip = (rec as any).trips
-        if (trip && !myTrips.some(t => t.id === trip.id)) {
+      const { data: sessionMembers } = await supabase
+        .from('member_sessions')
+        .select('member_id, members(trip_id)')
+        .eq('auth_uid', authUid)
+
+      // Collect all trip IDs
+      const tripIds = new Set<string>()
+      if (directMembers) directMembers.forEach(m => tripIds.add(m.trip_id))
+      if (sessionMembers) sessionMembers.forEach((s: any) => {
+        if (s.members?.trip_id) tripIds.add(s.members.trip_id)
+      })
+
+      if (tripIds.size === 0) return
+
+      // Fetch trip details
+      const { data: trips } = await supabase
+        .from('trips')
+        .select('id, name, invite_code')
+        .in('id', [...tripIds])
+
+      if (!trips) return
+      for (const trip of trips) {
+        if (!myTrips.some(t => t.id === trip.id)) {
           addTrip({ id: trip.id, name: trip.name, invite_code: trip.invite_code, joined_at: new Date().toISOString() })
         }
       }
