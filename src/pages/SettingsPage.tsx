@@ -28,6 +28,7 @@ export function SettingsPage() {
   const [fetchingRate, setFetchingRate] = useState(false)
   const [rateFrom, setRateFrom] = useState('')
   const [rateResult, setRateResult] = useState<string | null>(null)
+  const [theme, setTheme] = useState<'system' | 'light' | 'dark'>(() => (localStorage.getItem('theme-preference') as 'system' | 'light' | 'dark') || 'system')
   const { copiedId, markCopied } = useCopy()
   const { removeTrip } = useAppStore()
 
@@ -305,16 +306,16 @@ export function SettingsPage() {
             <p className="font-semibold text-sm mb-2">{t('settings.theme')}</p>
             <div className="flex gap-2">
               {(['system', 'light', 'dark'] as const).map((mode) => {
-                const current = localStorage.getItem('theme-preference') || 'system'
                 return (
                   <button
                     key={mode}
                     onClick={() => {
                       localStorage.setItem('theme-preference', mode)
+                      setTheme(mode)
                       applyTheme(mode)
                     }}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border ${
-                      current === mode
+                      theme === mode
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
                         : 'border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700'
                     }`}
