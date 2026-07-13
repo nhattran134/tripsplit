@@ -174,7 +174,8 @@ export function TripDashboardPage() {
     () => expenses.reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0),
     [expenses]
   )
-  const poolBalance = totalDeposits - totalPoolExpenses
+  const viaPoolSettled = settlements.filter(s => !s.deleted_at && s.method === 'via_pool').reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
+  const poolBalance = totalDeposits - totalPoolExpenses - viaPoolSettled
   const balances = useMemo(
     () => calculateBalances(members, deposits, expenses, expenseSplits, settlements),
     [members, deposits, expenses, expenseSplits, settlements]
