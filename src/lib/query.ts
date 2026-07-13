@@ -8,6 +8,7 @@ export const queryClient = new QueryClient({
       retry: 1, // Faster failure on mobile (was 2)
       refetchOnWindowFocus: false, // Avoid unnecessary refetches on mobile tab switch
       networkMode: 'offlineFirst', // Serve stale cache immediately when offline
+      throwOnError: false, // Don't throw — let components handle gracefully
     },
     mutations: {
       retry: 1,
