@@ -233,6 +233,8 @@
     "trips": "Chuyến đi",
     "loading": "Đang tải...",
     "notFound": "Không tìm thấy",
+    "notMember": "Bạn chưa tham gia chuyến đi này",
+    "joinTrip": "Tham gia",
     "offline": "Ngoại tuyến",
     "back": "Quay lại",
     "undo": "Hoàn tác",

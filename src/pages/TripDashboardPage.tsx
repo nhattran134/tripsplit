@@ -189,6 +189,20 @@ export function TripDashboardPage() {
     return <div className="text-center py-12"><p className="text-red-500">{t('common.notFound')}</p></div>
   }
 
+  // If user is not a member of this trip, redirect to join
+  const isMember = members.some(m => m.auth_uid === currentAuthUid)
+  if (currentAuthUid && members.length > 0 && !isMember) {
+    return (
+      <div className="text-center py-12 space-y-4">
+        <p className="text-4xl">🔒</p>
+        <p className="font-semibold text-slate-600 dark:text-slate-300">{t('common.notMember')}</p>
+        <button onClick={() => navigate(`/t/${trip.invite_code}`)} className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium">
+          {t('common.joinTrip')}
+        </button>
+      </div>
+    )
+  }
+
   const inviteLink = `${window.location.origin}/t/${trip.invite_code}`
 
   return (

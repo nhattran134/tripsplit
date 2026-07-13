@@ -233,6 +233,8 @@
     "trips": "Trips",
     "loading": "Loading...",
     "notFound": "Trip not found",
+    "notMember": "You're not a member of this trip",
+    "joinTrip": "Join Trip",
     "offline": "Offline",
     "back": "Back",
     "undo": "Undo",
