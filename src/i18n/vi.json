@@ -155,6 +155,8 @@
     "noPoolCredit": "Không có tín dụng quỹ — nhóm này chưa nạp đủ",
     "poolSurplus": "Dư quỹ",
     "poolSurplusHint": "Tiền dư từ quỹ chung - hoàn lại cho người nạp",
+    "poolReimbursement": "Hoàn tiền từ quỹ",
+    "poolReimbursementHint": "Người trả trước được hoàn từ quỹ chung",
     "refundAmount": "Hoàn lại"
   },
   "history": {

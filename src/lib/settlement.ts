@@ -81,6 +81,126 @@ export function calculateBalances(
 }
 
 /**
+ * Pool Reimbursement: When someone pays from pocket and the pool has a surplus,
+ * the pocket payer should be reimbursed from the pool surplus.
+ * The depositor physically holds the pool money, so "reimburse from pool" = depositor → pocket_payer transfer.
+ */
+export function calculatePoolReimbursements(
+  members: Member[],
+  deposits: Deposit[],
+  expenses: Expense[],
+  expenseSplits: ExpenseSplit[],
+  settlements: Settlement[]
+): Transfer[] {
+  const EPSILON = 0.005
+
+  // Step 1: Calculate pool surplus
+  const totalDeposits = deposits
+    .filter(d => !d.deleted_at)
+    .reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
+
+  const poolExpenseTotal = expenses
+    .filter(e => !e.deleted_at && e.paid_from === 'pool')
+    .reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
+
+  // via_pool settlements reduce the pool (money leaving the pool to settle debts)
+  const viaPoolSettlements = settlements
+    .filter(s => !s.deleted_at && s.method === 'via_pool')
+    .reduce((sum, s) => sum + Number(s.amount), 0)
+
+  let poolSurplus = totalDeposits - poolExpenseTotal - viaPoolSettlements
+
+  // Step 2: If no surplus, nothing to reimburse
+  if (poolSurplus <= EPSILON) return []
+
+  // Step 3: Get balances to know who's owed money
+  const balances = calculateBalances(members, deposits, expenses, expenseSplits, settlements)
+
+  // Step 4: Find pocket payers with positive net (they ARE owed money)
+  const pocketCredits = new Map<string, number>()
+  for (const expense of expenses) {
+    if (expense.deleted_at) continue
+    if (expense.paid_from === 'pocket') {
+      const current = pocketCredits.get(expense.member_id) ?? 0
+      pocketCredits.set(expense.member_id, current + Number(expense.amount) * Number(expense.rate_to_base))
+    }
+  }
+
+  // Pocket payers who are owed money (net > 0)
+  const pocketPayersOwed: { member: Member; reimbursable: number }[] = []
+  for (const [memberId, _credit] of pocketCredits) {
+    const balance = balances.find(b => b.memberId === memberId)
+    if (!balance || balance.net <= EPSILON) continue
+
+    const member = members.find(m => m.id === memberId)
+    if (!member) continue
+
+    pocketPayersOwed.push({ member, reimbursable: balance.net })
+  }
+
+  if (pocketPayersOwed.length === 0) return []
+
+  // Sort by largest reimbursable first (deterministic)
+  pocketPayersOwed.sort((a, b) => b.reimbursable - a.reimbursable)
+
+  // Step 5: Determine depositors and their proportional share of surplus
+  const depositorAmounts = new Map<string, number>()
+  for (const deposit of deposits) {
+    if (deposit.deleted_at) continue
+    const current = depositorAmounts.get(deposit.member_id) ?? 0
+    depositorAmounts.set(deposit.member_id, current + Number(deposit.amount) * Number(deposit.rate_to_base))
+  }
+
+  // Step 6: Allocate reimbursements, capped at pool surplus
+  const transfers: Transfer[] = []
+  let surplusRemaining = poolSurplus
+
+  for (const { member: pocketPayer, reimbursable } of pocketPayersOwed) {
+    if (surplusRemaining <= EPSILON) break
+
+    const amount = Math.round(Math.min(reimbursable, surplusRemaining) * 100) / 100
+    if (amount <= EPSILON) continue
+
+    // Distribute FROM depositors proportionally (excluding the pocket payer themselves)
+    const eligibleDepositors: { member: Member; depositAmount: number }[] = []
+    let totalEligibleDeposits = 0
+
+    for (const [depId, depAmount] of depositorAmounts) {
+      if (depId === pocketPayer.id) continue // Don't reimburse yourself
+      const depMember = members.find(m => m.id === depId)
+      if (!depMember) continue
+      eligibleDepositors.push({ member: depMember, depositAmount: depAmount })
+      totalEligibleDeposits += depAmount
+    }
+
+    if (eligibleDepositors.length === 0 || totalEligibleDeposits <= EPSILON) continue
+
+    // Proportional distribution from depositors
+    let allocated = 0
+    for (let i = 0; i < eligibleDepositors.length; i++) {
+      const dep = eligibleDepositors[i]
+      let share: number
+
+      if (i === eligibleDepositors.length - 1) {
+        // Last depositor gets remainder to avoid rounding errors
+        share = Math.round((amount - allocated) * 100) / 100
+      } else {
+        share = Math.round((amount * dep.depositAmount / totalEligibleDeposits) * 100) / 100
+      }
+
+      if (share >= EPSILON) {
+        transfers.push({ from: dep.member, to: pocketPayer, amount: share })
+        allocated += share
+      }
+    }
+
+    surplusRemaining = Math.round((surplusRemaining - amount) * 100) / 100
+  }
+
+  return transfers
+}
+
+/**
  * Greedy debt simplification.
  * Members in the same group are consolidated (no intra-group transfers).
  * Produces at most N-1 transfers (where N = groups/individuals with non-zero balance).

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
-import { calculateBalances, simplifyDebts } from '@/lib/settlement'
+import { calculateBalances, simplifyDebts, calculatePoolReimbursements } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { Avatar } from '@/components/common/Avatar'
@@ -15,6 +15,7 @@ export function SettleUpPage() {
   const queryClient = useQueryClient()
   const { t } = useTranslation()
   const [settlingIndex, setSettlingIndex] = useState<number | null>(null)
+  const [settlingPoolIndex, setSettlingPoolIndex] = useState<number | null>(null)
   const [settleMethods, setSettleMethods] = useState<Record<number, 'direct' | 'via_pool'>>({})
   const [settleAmounts, setSettleAmounts] = useState<Record<number, string>>({})
   const [showIntraGroup, setShowIntraGroup] = useState(false)
@@ -117,6 +118,11 @@ export function SettleUpPage() {
   const transfers = useMemo(
     () => simplifyDebts(balances, members),
     [balances, members]
+  )
+
+  const poolReimbursements = useMemo(
+    () => calculatePoolReimbursements(members, deposits, expenses, expenseSplits, settlements),
+    [members, deposits, expenses, expenseSplits, settlements]
   )
 
   // Compute intra-group settlements (debts between members of the same group)
@@ -407,6 +413,57 @@ export function SettleUpPage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pool Reimbursements */}
+      {poolReimbursements.length > 0 && (
+        <div className="space-y-3">
+          <div>
+            <h2 className="font-semibold text-sm text-slate-700 dark:text-slate-200">{t('settle.poolReimbursement')}</h2>
+            <p className="text-xs text-slate-500 mt-0.5">{t('settle.poolReimbursementHint')}</p>
+          </div>
+          {poolReimbursements.map((transfer, index) => (
+            <div
+              key={`pool-reimb-${transfer.from.id}-${transfer.to.id}-${index}`}
+              className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm border border-slate-200 dark:border-slate-700"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={26} />
+                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{transfer.from.name}</span>
+                  </div>
+                  <span className="text-sm text-slate-400">→</span>
+                  <div className="flex flex-col items-center gap-0.5">
+                    <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={26} />
+                    <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">{transfer.to.name}</span>
+                  </div>
+                </div>
+                <span className="font-bold">{formatCurrency(transfer.amount, baseCurrency)}</span>
+              </div>
+              <p className="text-sm text-slate-600 dark:text-slate-400">
+                <span className="font-medium">{transfer.from.name}</span>
+                {' '}{t('settle.pays')}{' '}
+                <span className="font-medium">{transfer.to.name}</span>
+              </p>
+              <button
+                onClick={() => {
+                  setSettlingPoolIndex(index)
+                  settleMutation.mutate({
+                    from: transfer.from,
+                    to: transfer.to,
+                    amount: transfer.amount,
+                    method: 'via_pool',
+                  })
+                }}
+                disabled={settleMutation.isPending && settlingPoolIndex === index}
+                className="mt-3 w-full py-2 rounded-lg border border-green-500 text-green-600 text-sm font-medium hover:bg-green-50 dark:hover:bg-green-900/20 disabled:opacity-50 transition-colors"
+              >
+                {settleMutation.isPending && settlingPoolIndex === index ? t('settle.marking') : t('settle.markSettled')}
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

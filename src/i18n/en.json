@@ -155,6 +155,8 @@
     "noPoolCredit": "No pool credit — this group didn't deposit enough",
     "poolSurplus": "Pool Surplus",
     "poolSurplusHint": "Leftover from group pool - refund to depositors",
+    "poolReimbursement": "Pool Reimbursement",
+    "poolReimbursementHint": "Pocket payers reimbursed from pool surplus",
     "refundAmount": "Refund"
   },
   "history": {
