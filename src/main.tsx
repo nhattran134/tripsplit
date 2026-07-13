@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/common/ErrorBoundary'
 import './i18n'
 import { router } from './router'
 import { queryClient } from './lib/query'
+import { supabase, initAuth } from './lib/supabase'
 import './index.css'
 
 // Apply theme from localStorage on load
@@ -17,6 +18,16 @@ import './index.css'
     document.documentElement.classList.remove('dark')
   }
 })()
+
+// Initialize auth session (retries on failure)
+initAuth()
+
+// When auth state changes (session restored after token refresh), invalidate session queries
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+    queryClient.invalidateQueries({ queryKey: ['session'] })
+  }
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
