@@ -123,8 +123,18 @@ export function calculatePoolReimbursements(
     }
   }
 
-  // Pocket payers who are owed money (net > 0)
+  // Step 4: Find pocket payers and calculate what OTHER groups owe them
+  // (intra-group debt is settled privately, not from pool)
   const pocketPayersOwed: { member: Member; reimbursable: number }[] = []
+  
+  // Get depositor group IDs
+  const depositorMemberIds = new Set<string>()
+  for (const deposit of deposits) {
+    if (deposit.deleted_at) continue
+    depositorMemberIds.add(deposit.member_id)
+  }
+  
+  // For each pocket payer, sum only the splits that belong to depositor group members
   for (const [memberId, _credit] of pocketCredits) {
     const balance = balances.find(b => b.memberId === memberId)
     if (!balance || balance.net <= EPSILON) continue
@@ -132,7 +142,29 @@ export function calculatePoolReimbursements(
     const member = members.find(m => m.id === memberId)
     if (!member) continue
 
-    pocketPayersOwed.push({ member, reimbursable: balance.net })
+    // Find pocket expenses by this payer
+    const payerExpenses = expenses.filter(e => !e.deleted_at && e.paid_from === 'pocket' && e.member_id === memberId)
+    
+    // Sum splits from members in OTHER groups (not the pocket payer's group)
+    let owedByOtherGroups = 0
+    for (const exp of payerExpenses) {
+      const splits = expenseSplits.filter(s => s.expense_id === exp.id)
+      for (const split of splits) {
+        const splitMember = members.find(m => m.id === split.member_id)
+        if (!splitMember) continue
+        // Skip if same group as pocket payer (intra-group)
+        if (splitMember.group_id && splitMember.group_id === member.group_id) continue
+        // Skip if it's the pocket payer themselves
+        if (splitMember.id === memberId) continue
+        owedByOtherGroups += Number(split.share_amount) || 0
+      }
+    }
+
+    if (owedByOtherGroups <= EPSILON) continue
+    
+    // Cap at their actual net (in case settlements already partially resolved)
+    const reimbursable = Math.min(owedByOtherGroups, balance.net)
+    pocketPayersOwed.push({ member, reimbursable: Math.round(reimbursable * 100) / 100 })
   }
 
   if (pocketPayersOwed.length === 0) return []

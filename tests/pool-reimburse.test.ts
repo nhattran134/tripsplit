@@ -339,11 +339,12 @@ describe('Pool Reimbursement Algorithm', () => {
 
       // Bob net = 0 + 2M - 500K = +1.5M (owed)
       // Pool surplus = 5M (no pool expenses)
-      // Alice is depositor → reimburse Bob 1.5M from Alice
+      // Alice is depositor → reimburse Bob for what OTHER groups owe (Alice 500K + Dave 500K = 1M)
+      // Charlie's 500K is intra-group, Bob's own 500K is his responsibility
       const bobTransfer = transfers.find(t => t.to.id === 'bob')
       expect(bobTransfer).toBeDefined()
       expect(bobTransfer!.from.id).toBe('alice')
-      expect(bobTransfer!.amount).toBe(1_500_000)
+      expect(bobTransfer!.amount).toBe(1_000_000)
     })
   })
 
