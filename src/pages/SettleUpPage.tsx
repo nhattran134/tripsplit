@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '@/lib/supabase'
-import { calculateBalances, simplifyDebts, calculatePoolReimbursements } from '@/lib/settlement'
+import { calculateBalances, simplifyDebts } from '@/lib/settlement'
 import { formatCurrency } from '@/lib/currency'
 import { generateId } from '@/lib/utils'
 import { Avatar } from '@/components/common/Avatar'
@@ -126,24 +126,45 @@ export function SettleUpPage() {
 
   const transfers = useMemo(
     () => {
-      // Get normal inter-group transfers
-      const interGroup = simplifyDebts(balances, members)
-      // Get pool reimbursements (pocket payers reimbursed from depositors)
-      const poolReimb = calculatePoolReimbursements(members, deposits, expenses, expenseSplits, settlements)
-      // Combine: pool reimbursements + normal settlements (deduplicate if same from→to)
-      const combined = [...poolReimb]
-      for (const t of interGroup) {
-        // Check if already covered by pool reimbursement
-        const existing = combined.find(c => c.from.id === t.from.id && c.to.id === t.to.id)
-        if (existing) {
-          existing.amount = Math.round((existing.amount + t.amount) * 100) / 100
-        } else {
-          combined.push(t)
-        }
+      // For settlements, only consider pocket expenses.
+      // Pool expenses are already "settled" by the pool mechanism (depositors funded them).
+      // What remains: pocket payers are owed by other members for their share of pocket expenses.
+      const pocketBalances = new Map<string, number>()
+      for (const m of members) pocketBalances.set(m.id, 0)
+
+      // Credit pocket payers
+      for (const e of expenses) {
+        if (e.deleted_at || e.paid_from !== 'pocket') continue
+        const current = pocketBalances.get(e.member_id) ?? 0
+        pocketBalances.set(e.member_id, current + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1))
       }
-      return combined.filter(t => t.amount > 0.005)
+
+      // Debit shares of pocket expenses only
+      for (const s of expenseSplits) {
+        const exp = expenses.find(e => e.id === s.expense_id)
+        if (!exp || exp.deleted_at || exp.paid_from !== 'pocket') continue
+        const current = pocketBalances.get(s.member_id) ?? 0
+        pocketBalances.set(s.member_id, current - (Number(s.share_amount) || 0))
+      }
+
+      // Account for existing settlements
+      for (const s of settlements) {
+        if (s.deleted_at) continue
+        const fromBal = pocketBalances.get(s.from_member_id) ?? 0
+        const toBal = pocketBalances.get(s.to_member_id) ?? 0
+        if (s.from_member_id === s.to_member_id) continue
+        pocketBalances.set(s.from_member_id, fromBal + (Number(s.amount) || 0))
+        pocketBalances.set(s.to_member_id, toBal - (Number(s.amount) || 0))
+      }
+
+      const pocketEntries = [...pocketBalances.entries()].map(([memberId, net]) => ({
+        memberId,
+        net: Math.round(net * 100) / 100,
+      }))
+
+      return simplifyDebts(pocketEntries, members)
     },
-    [balances, members, deposits, expenses, expenseSplits, settlements]
+    [members, expenses, expenseSplits, settlements]
   )
 
 
