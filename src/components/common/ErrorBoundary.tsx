@@ -20,10 +20,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
-    // Clear all caches and reload
+    // Clear query caches but KEEP auth session (don't log user out)
     try {
       localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE')
-      // Clear react-query cache
+      // Don't remove 'tripsplit-auth' — that would log them out!
       if ('caches' in window) {
         caches.keys().then(keys => keys.forEach(key => caches.delete(key)))
       }

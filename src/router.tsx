@@ -22,7 +22,7 @@ function RouteErrorFallback() {
   const handleClearAndReload = () => {
     try {
       localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE')
-      localStorage.removeItem('tripsplit-auth')
+      // Don't remove 'tripsplit-auth' — that would log them out!
       if ('caches' in window) {
         caches.keys().then(keys => keys.forEach(key => caches.delete(key)))
       }
