@@ -369,8 +369,9 @@ export function HomePage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="absolute inset-0" onClick={() => setShowCreate(false)} />
+          <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-t-2xl p-6 w-full max-w-lg space-y-4 max-h-[85vh] overflow-y-auto border-t border-white/30 dark:border-slate-700/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] animate-[slideUp_0.2s_ease-out]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
             <h2 className="text-xl font-bold">{t('trip.create')}</h2>
 
             <div>
@@ -445,8 +446,9 @@ export function HomePage() {
 
       {/* Join by Code Modal */}
       {showJoin && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-md space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-end justify-center">
+          <div className="absolute inset-0" onClick={() => setShowJoin(false)} />
+          <div className="relative bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-t-2xl p-6 w-full max-w-lg space-y-4 max-h-[85vh] overflow-y-auto border-t border-white/30 dark:border-slate-700/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)] animate-[slideUp_0.2s_ease-out]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
             <h2 className="text-xl font-bold">{t('join.title')}{joinTrip ? `: ${joinTrip.name}` : ''}</h2>
 
             {/* Step 1: Enter code */}
