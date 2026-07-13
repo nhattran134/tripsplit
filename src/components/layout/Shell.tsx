@@ -1,14 +1,12 @@
 import { Outlet, useLocation } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import { OfflineBadge } from '@/components/common/OfflineBadge'
-import { LanguageToggle } from '@/components/common/LanguageToggle'
 import { ToastContainer } from '@/components/common/Toast'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 
 export function Shell() {
   const location = useLocation()
   const isTripRoute = location.pathname.startsWith('/trip/')
-  const isHome = location.pathname === '/'
 
   useOfflineSync()
 
@@ -20,11 +18,6 @@ export function Shell() {
         <Outlet />
       </main>
       {isTripRoute && <BottomNav />}
-      {isHome && (
-        <div className="fixed bottom-6 right-4 safe-area-bottom z-10">
-          <LanguageToggle />
-        </div>
-      )}
     </div>
   )
 }

@@ -7,6 +7,7 @@ import { Calendar, Users, Hash } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
 import { supabase, ensureAnonymousAuth } from '@/lib/supabase'
 import { Avatar, AvatarPicker } from '@/components/common/Avatar'
+import { LanguageToggle } from '@/components/common/LanguageToggle'
 
 interface TripRef { id: string; name: string; invite_code: string; joined_at: string }
 
@@ -323,7 +324,10 @@ export function HomePage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">TripSplit</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold">TripSplit</h1>
+          <LanguageToggle />
+        </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowJoin(true)}
