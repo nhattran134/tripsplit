@@ -6,7 +6,7 @@ import { LayoutDashboard, Plus, Wallet, Users, Handshake, X } from 'lucide-react
 import { supabase } from '@/lib/supabase'
 import { generateId } from '@/lib/utils'
 import { MoneyInput } from '@/components/common/MoneyInput'
-import { getCurrencyDecimals } from '@/lib/currency'
+import { getCurrencyDecimals, formatCurrency } from '@/lib/currency'
 import type { Member } from '@/types'
 
 const QUICK_CATEGORIES = [
@@ -177,7 +177,7 @@ export function BottomNav() {
               disabled={quickMutation.isPending || !quickAmount}
               className="w-full py-3 rounded-xl bg-indigo-600 text-white font-semibold disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
-              {quickMutation.isPending ? '...' : `${t('expense.add')} ${quickAmount ? `₫${Number(quickAmount).toLocaleString()}` : ''}`}
+              {quickMutation.isPending ? '...' : `${t('expense.add')} ${quickAmount ? formatCurrency(Number(quickAmount), trip?.base_currency || 'VND') : ''}`}
             </button>
           </div>
         </div>
