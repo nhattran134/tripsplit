@@ -512,10 +512,15 @@ describe('Pool Reimbursement Algorithm', () => {
       // Wait — settlements affect calculateBalances too.
       // In calculateBalances: Bob gets +4M (from paying), Alice gets -4M (received)
       // Charlie net = 0 + 2M - 666666 = 1,333,334 (settlements don't directly affect Charlie)
-      // Reimbursable = min(1,333,334, 1M surplus) = 1M
+      // With the fix: via_pool settlements don't reduce surplus in this function
+      // (they are the OUTPUT, not input — prevents feedback loops)
+      // Pool surplus = 5M - 0 = 5M
+      // Charlie net (after settlements): 0 + 2M - 666666 = 1,333,334
+      // But calculateBalances also factors in the 4M settlement affecting Bob/Alice
+      // Charlie is unaffected by that settlement
+      // Reimbursable = min(1,333,334, 5M surplus) = 1,333,334
       const totalReimbursed = transfers.reduce((sum, t) => sum + t.amount, 0)
-      expect(totalReimbursed).toBeLessThanOrEqual(1_000_000)
-      expect(totalReimbursed).toBe(1_000_000)
+      expect(totalReimbursed).toBe(1_333_334)
     })
   })
 
@@ -577,3 +582,32 @@ describe('Pool Reimbursement Algorithm', () => {
     })
   })
 })
+
+  describe('Anti-loop: after reimbursement settlement, no more suggestions', () => {
+    const alice = makeMember('alice', 'Alice')
+    const bob = makeMember('bob', 'Bob')
+    const members = [alice, bob]
+
+    const deposits = [makeDeposit('alice', 5_000_000)]
+    const pocketExp = makeExpense('bob', 1_500_000, 'pocket')
+    const expenses = [pocketExp]
+    const splits = [
+      makeSplit(pocketExp.id, 'alice', 750_000),
+      makeSplit(pocketExp.id, 'bob', 750_000),
+    ]
+
+    it('before settlement: suggests reimbursement', () => {
+      const transfers = calculatePoolReimbursements(members, deposits, expenses, splits, [])
+      expect(transfers.length).toBe(1)
+      expect(transfers[0].amount).toBe(750_000)
+    })
+
+    it('after settlement: no more suggestions (net = 0)', () => {
+      // Bob was reimbursed 750K via_pool (Alice → Bob)
+      const settlements = [makeSettlement('alice', 'bob', 750_000, 'via_pool')]
+      const transfers = calculatePoolReimbursements(members, deposits, expenses, splits, settlements)
+      // Bob's net after settlement: +750K (pocket credit - share) - 750K (received) = 0
+      // No more reimbursement needed
+      expect(transfers.length).toBe(0)
+    })
+  })

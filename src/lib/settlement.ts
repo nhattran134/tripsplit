@@ -94,7 +94,9 @@ export function calculatePoolReimbursements(
 ): Transfer[] {
   const EPSILON = 0.005
 
-  // Step 1: Calculate pool surplus
+  // Step 1: Calculate pool surplus (deposits - pool expenses only)
+  // Don't subtract via_pool settlements here — they are the OUTPUT of this function,
+  // not an input. Including them creates a feedback loop.
   const totalDeposits = deposits
     .filter(d => !d.deleted_at)
     .reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
@@ -103,12 +105,7 @@ export function calculatePoolReimbursements(
     .filter(e => !e.deleted_at && e.paid_from === 'pool')
     .reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
 
-  // via_pool settlements reduce the pool (money leaving the pool to settle debts)
-  const viaPoolSettlements = settlements
-    .filter(s => !s.deleted_at && s.method === 'via_pool')
-    .reduce((sum, s) => sum + Number(s.amount), 0)
-
-  let poolSurplus = totalDeposits - poolExpenseTotal - viaPoolSettlements
+  let poolSurplus = totalDeposits - poolExpenseTotal
 
   // Step 2: If no surplus, nothing to reimburse
   if (poolSurplus <= EPSILON) return []
