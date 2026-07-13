@@ -114,15 +114,29 @@ export function SettleUpPage() {
     () => calculateBalances(members, deposits, expenses, expenseSplits, settlements),
     [members, deposits, expenses, expenseSplits, settlements]
   )
+
   const transfers = useMemo(
-    () => simplifyDebts(balances, members),
-    [balances, members]
+    () => {
+      // Get normal inter-group transfers
+      const interGroup = simplifyDebts(balances, members)
+      // Get pool reimbursements (pocket payers reimbursed from depositors)
+      const poolReimb = calculatePoolReimbursements(members, deposits, expenses, expenseSplits, settlements)
+      // Combine: pool reimbursements + normal settlements (deduplicate if same from→to)
+      const combined = [...poolReimb]
+      for (const t of interGroup) {
+        // Check if already covered by pool reimbursement
+        const existing = combined.find(c => c.from.id === t.from.id && c.to.id === t.to.id)
+        if (existing) {
+          existing.amount = Math.round((existing.amount + t.amount) * 100) / 100
+        } else {
+          combined.push(t)
+        }
+      }
+      return combined.filter(t => t.amount > 0.005)
+    },
+    [balances, members, deposits, expenses, expenseSplits, settlements]
   )
 
-  const poolReimbursements = useMemo(
-    () => calculatePoolReimbursements(members, deposits, expenses, expenseSplits, settlements),
-    [members, deposits, expenses, expenseSplits, settlements]
-  )
 
   // Compute intra-group settlements (debts between members of the same group)
   const intraGroupTransfers = useMemo(() => {
@@ -415,33 +429,7 @@ export function SettleUpPage() {
         </div>
       )}
 
-      {/* Pool Reimbursements */}
-      {poolReimbursements.length > 0 && (
-        <div className="space-y-3">
-          <div>
-            <h2 className="font-semibold text-sm text-slate-700 dark:text-slate-200">{t('settle.poolReimbursement')}</h2>
-            <p className="text-xs text-slate-500 mt-0.5">{t('settle.poolReimbursementHint')}</p>
-          </div>
-          {poolReimbursements.map((transfer, index) => (
-            <div
-              key={`pool-reimb-${transfer.from.id}-${transfer.to.id}-${index}`}
-              className="bg-green-50 dark:bg-green-900/20 rounded-xl p-4 border border-green-200 dark:border-green-700"
-            >
-              <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-2">
-                  <Avatar name={transfer.from.name} style={transfer.from.avatar_style} seed={transfer.from.avatar_seed} size={26} />
-                  <span className="text-sm text-slate-400">→</span>
-                  <Avatar name={transfer.to.name} style={transfer.to.avatar_style} seed={transfer.to.avatar_seed} size={26} />
-                </div>
-                <span className="font-bold text-green-700 dark:text-green-300">{formatCurrency(transfer.amount, baseCurrency)}</span>
-              </div>
-              <p className="text-xs text-green-600 dark:text-green-400">
-                💰 {transfer.from.name} → {transfer.to.name} ({t('settle.poolReimbursementHint')})
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Pool reimbursements now included in main transfers list above */}
 
       {/* Pool Surplus Refund */}
       {depositorRefunds.length > 0 && (
