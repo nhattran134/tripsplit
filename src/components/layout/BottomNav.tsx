@@ -152,6 +152,31 @@ export function BottomNav() {
               autoFocus
             />
 
+            {/* Suggested amounts */}
+            <div className="flex flex-wrap gap-2">
+              {(() => {
+                const currency = trip?.base_currency || 'VND'
+                const suggestions = currency === 'VND'
+                  ? [20000, 50000, 100000, 200000, 500000, 1000000]
+                  : currency === 'JPY'
+                  ? [500, 1000, 2000, 5000, 10000, 20000]
+                  : [5, 10, 20, 50, 100, 200] // USD, EUR, etc.
+                return suggestions.map(amt => (
+                  <button
+                    key={amt}
+                    onClick={() => setQuickAmount(amt.toString())}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${
+                      quickAmount === amt.toString()
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 active:bg-slate-100'
+                    }`}
+                  >
+                    {amt >= 1000 ? `${(amt/1000).toLocaleString()}k` : amt}
+                  </button>
+                ))
+              })()}
+            </div>
+
             <div className="flex gap-2">
               {QUICK_CATEGORIES.map(c => (
                 <button
