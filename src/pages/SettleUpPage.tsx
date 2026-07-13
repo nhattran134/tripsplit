@@ -221,10 +221,11 @@ export function SettleUpPage() {
 
   // Pool surplus calculation for refund
   const poolSurplus = useMemo(() => {
-    const totalDeposits = deposits.reduce((sum, d) => sum + Number(d.amount) * Number(d.rate_to_base), 0)
-    const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + Number(e.amount) * Number(e.rate_to_base), 0)
-    return totalDeposits - totalPoolExpenses
-  }, [deposits, expenses])
+    const totalDeposits = deposits.filter(d => !d.deleted_at).reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+    const totalPoolExpenses = expenses.filter(e => !e.deleted_at && e.paid_from === 'pool').reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+    const viaPoolSettled = settlements.filter(s => !s.deleted_at && s.method === 'via_pool').reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
+    return totalDeposits - totalPoolExpenses - viaPoolSettled
+  }, [deposits, expenses, settlements])
 
   const depositorRefunds = useMemo(() => {
     if (poolSurplus <= 0.01) return []
