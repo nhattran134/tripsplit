@@ -208,7 +208,7 @@ export function BottomNav() {
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-t border-white/20 dark:border-slate-700/50 shadow-[0_-2px_20px_rgba(0,0,0,0.05)]"
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-t border-white/20 dark:border-slate-700/50 shadow-[0_-2px_20px_rgba(0,0,0,0.05)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="max-w-lg mx-auto flex justify-around items-end py-2">
