@@ -63,6 +63,7 @@
   },
   "expense": {
     "title": "Thêm chi tiêu",
+    "quickAdd": "Thêm nhanh",
     "amount": "Số tiền",
     "currency": "Tiền tệ",
     "rate": "Tỷ giá",

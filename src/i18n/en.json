@@ -63,6 +63,7 @@
   },
   "expense": {
     "title": "Add Expense",
+    "quickAdd": "Quick Add",
     "amount": "Amount",
     "currency": "Currency",
     "rate": "Rate",
