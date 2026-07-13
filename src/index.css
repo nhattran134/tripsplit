@@ -121,13 +121,6 @@ html {
   }
 }
 
-/* Bottom sheet: limit height to visible area (respects keyboard) */
-.bottom-sheet {
-  max-height: calc(100dvh - env(safe-area-inset-top, 20px) - 20px);
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
 .pb-safe {
   padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
 }

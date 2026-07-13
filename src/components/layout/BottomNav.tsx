@@ -138,7 +138,7 @@ export function BottomNav() {
       {showQuick && (
         <div className="fixed inset-0 z-[9998] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowQuick(false)} />
-          <div className="relative w-full max-w-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-t-2xl p-5 space-y-4 bottom-sheet animate-[slideUp_0.2s_ease-out] border-t border-white/30 dark:border-slate-700/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
+          <div className="relative w-full max-w-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-t-2xl p-5 space-y-4 animate-[slideUp_0.2s_ease-out] border-t border-white/30 dark:border-slate-700/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-lg">{t('expense.quickAdd')}</h2>
               <button onClick={() => setShowQuick(false)} className="p-1 text-slate-400"><X size={20} /></button>
