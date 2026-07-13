@@ -137,8 +137,8 @@ export function BottomNav() {
       {/* Quick Expense Modal */}
       {showQuick && (
         <div className="fixed inset-0 z-[9998] flex items-end justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setShowQuick(false)} />
-          <div className="relative w-full max-w-lg bg-white dark:bg-slate-800 rounded-t-2xl p-5 space-y-4 animate-[slideUp_0.2s_ease-out]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowQuick(false)} />
+          <div className="relative w-full max-w-lg bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-t-2xl p-5 space-y-4 animate-[slideUp_0.2s_ease-out] border-t border-white/30 dark:border-slate-700/50 shadow-[0_-4px_30px_rgba(0,0,0,0.1)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 16px) + 16px)' }}>
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-lg">{t('expense.quickAdd')}</h2>
               <button onClick={() => setShowQuick(false)} className="p-1 text-slate-400"><X size={20} /></button>
@@ -208,7 +208,7 @@ export function BottomNav() {
         </div>
       )}
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border-t border-slate-200 dark:border-slate-700"
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-t border-white/20 dark:border-slate-700/50 shadow-[0_-2px_20px_rgba(0,0,0,0.05)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         <div className="max-w-lg mx-auto flex justify-around items-end py-2">

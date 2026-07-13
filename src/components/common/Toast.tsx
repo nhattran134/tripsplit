@@ -34,7 +34,7 @@ export function ToastContainer() {
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="bg-slate-800 dark:bg-slate-100 text-white dark:text-slate-800 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium animate-[slideDown_0.3s_ease-out] text-center"
+          className="bg-slate-800/80 dark:bg-white/80 backdrop-blur-xl text-white dark:text-slate-800 px-4 py-2.5 rounded-xl shadow-lg text-sm font-medium animate-[slideDown_0.3s_ease-out] text-center border border-white/10 dark:border-slate-200/20"
         >
           {toast.text}
         </div>

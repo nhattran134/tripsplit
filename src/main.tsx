@@ -12,11 +12,16 @@ import './index.css'
 // Apply theme from localStorage on load
 ;(() => {
   const pref = localStorage.getItem('theme-preference') || 'system'
-  if (pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  const isDark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  if (isDark) {
     document.documentElement.classList.add('dark')
   } else {
     document.documentElement.classList.remove('dark')
   }
+  // Update theme-color meta to match (blends with iPhone pill)
+  const metaTheme = document.querySelector('meta[name="theme-color"]:not([media])')
+    || document.querySelector('meta[name="theme-color"]')
+  if (metaTheme) metaTheme.setAttribute('content', isDark ? '#0f172a' : '#f8fafc')
 })()
 
 // Initialize auth session (retries on failure)
