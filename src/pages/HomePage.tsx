@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useQuery } from '@tanstack/react-query'
@@ -61,6 +61,29 @@ export function HomePage() {
   const { t } = useTranslation()
   const { myTrips, addTrip } = useAppStore()
   const navigate = useNavigate()
+
+  // Sync trips from server: fetch trips where user is a member (recovers after cache clear)
+  useEffect(() => {
+    async function syncTrips() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.user?.id) return
+
+      const { data: memberRecords } = await supabase
+        .from('members')
+        .select('trip_id, trips(id, name, invite_code)')
+        .eq('auth_uid', session.user.id)
+        .is('deleted_at', null)
+
+      if (!memberRecords) return
+      for (const rec of memberRecords) {
+        const trip = (rec as any).trips
+        if (trip && !myTrips.some(t => t.id === trip.id)) {
+          addTrip({ id: trip.id, name: trip.name, invite_code: trip.invite_code, joined_at: new Date().toISOString() })
+        }
+      }
+    }
+    syncTrips()
+  }, [])
 
   // Batch fetch all trip summaries in ONE query (avoids N+1)
   const tripIds = myTrips.map((t) => t.id)
