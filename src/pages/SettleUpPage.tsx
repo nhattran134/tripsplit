@@ -229,21 +229,68 @@ export function SettleUpPage() {
 
   const depositorRefunds = useMemo(() => {
     if (poolSurplus <= 0.01) return []
-    const totalDeposits = deposits.filter(d => !d.deleted_at).reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
-    if (totalDeposits === 0) return []
+    const totalDep = deposits.filter(d => !d.deleted_at).reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+    if (totalDep === 0) return []
 
-    const depositorTotals = new Map<string, number>()
+    // Per-depositor: start with their deposit
+    const depositorMap = new Map<string, number>()
     for (const d of deposits) {
       if (d.deleted_at) continue
-      depositorTotals.set(d.member_id, (depositorTotals.get(d.member_id) || 0) + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1))
+      depositorMap.set(d.member_id, (depositorMap.get(d.member_id) || 0) + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1))
     }
 
-    return [...depositorTotals.entries()].map(([memberId, deposited]) => {
-      const member = members.find(m => m.id === memberId)
-      const refund = Math.round((deposited / totalDeposits) * poolSurplus)
-      return { member, refund }
-    }).filter(r => r.refund > 0.01)
-  }, [poolSurplus, deposits, members])
+    // Subtract pool expenses proportionally (shared cost)
+    const totalPoolExp = expenses.filter(e => !e.deleted_at && e.paid_from === 'pool')
+      .reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+    for (const [id, dep] of depositorMap) {
+      const share = (dep / totalDep) * totalPoolExp
+      depositorMap.set(id, dep - share)
+    }
+
+    // Subtract via_pool settlements from the settler's group depositor
+    for (const s of settlements) {
+      if (s.deleted_at || s.method !== 'via_pool') continue
+      // Find which depositor funds this settlement (settler's group depositor)
+      const settler = members.find(m => m.id === s.from_member_id)
+      if (!settler) continue
+      
+      // Find the depositor in the same group as the settler
+      let targetDepositor: string | null = null
+      if (settler.group_id) {
+        // Find depositor with same group_id
+        for (const [depId] of depositorMap) {
+          const depMember = members.find(m => m.id === depId)
+          if (depMember?.group_id === settler.group_id) {
+            targetDepositor = depId
+            break
+          }
+        }
+      }
+      // If settler IS a depositor themselves
+      if (depositorMap.has(s.from_member_id)) {
+        targetDepositor = s.from_member_id
+      }
+      // If no group match found, split proportionally
+      if (targetDepositor) {
+        depositorMap.set(targetDepositor, (depositorMap.get(targetDepositor) || 0) - (Number(s.amount) || 0))
+      } else {
+        // Proportional fallback
+        for (const [id, current] of depositorMap) {
+          const origDep = deposits.filter(d => !d.deleted_at && d.member_id === id)
+            .reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+          const proportion = origDep / totalDep
+          depositorMap.set(id, current - (Number(s.amount) || 0) * proportion)
+        }
+      }
+    }
+
+    return [...depositorMap.entries()]
+      .filter(([, refund]) => refund > 0.01)
+      .map(([memberId, refund]) => ({
+        member: members.find(m => m.id === memberId),
+        refund: Math.round(refund),
+      }))
+  }, [poolSurplus, deposits, expenses, settlements, members])
 
   return (
     <div className="space-y-4">

@@ -251,7 +251,7 @@ export function TripDashboardPage() {
           <div className="space-y-2">
             {(() => {
               // Group members by group_id
-              const groupMap = new Map<string, { name: string; deposited: number; spent: number }>()
+              const groupMap = new Map<string, { name: string; deposited: number; spent: number; viaPool: number }>()
               const activeMembers = members.filter(m => !m.deleted_at)
               
               for (const m of activeMembers) {
@@ -262,25 +262,30 @@ export function TripDashboardPage() {
                 const memberPoolShares = expenseSplits
                   .filter(s => s.member_id === m.id && expenses.find(e => e.id === s.expense_id && e.paid_from === 'pool'))
                   .reduce((sum, s) => sum + (Number(s.share_amount) || 0), 0)
-                // via_pool settlements where this member is the payer (from) = pool money leaving
+                // via_pool settlements where this member is the payer (from) = pool money leaving from this group
                 const memberViaPool = settlements.filter(s => !s.deleted_at && s.method === 'via_pool' && s.from_member_id === m.id)
                   .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
                 
                 if (existing) {
                   existing.deposited += memberDeposits
                   existing.spent += memberPoolShares + memberViaPool
+                  existing.viaPool += memberViaPool
                 } else {
                   const groupMembers = m.group_id 
                     ? activeMembers.filter(om => om.group_id === m.group_id).map(om => om.name)
                     : [m.name]
-                  groupMap.set(key, { name: groupMembers.join(' & '), deposited: memberDeposits, spent: memberPoolShares + memberViaPool })
+                  groupMap.set(key, { name: groupMembers.join(' & '), deposited: memberDeposits, spent: memberPoolShares + memberViaPool, viaPool: memberViaPool })
                 }
               }
 
               return [...groupMap.values()]
                 .filter(g => g.deposited > 0)
                 .map(g => {
-                  const remaining = totalDeposits > 0 ? Math.round((g.deposited / totalDeposits) * poolBalance) : 0
+                  // Pool expenses deducted proportionally
+                  const poolExpShare = totalDeposits > 0 ? (g.deposited / totalDeposits) * totalPoolExpenses : 0
+                  // Via_pool from this group deducted directly from their deposit
+                  const groupViaPool = g.viaPool || 0
+                  const remaining = Math.round(g.deposited - poolExpShare - groupViaPool)
                   return { ...g, remaining }
                 })
                 .sort((a, b) => b.remaining - a.remaining)
