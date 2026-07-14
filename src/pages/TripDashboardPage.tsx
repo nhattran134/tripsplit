@@ -280,7 +280,7 @@ export function TripDashboardPage() {
               return [...groupMap.values()]
                 .filter(g => g.deposited > 0)
                 .map(g => {
-                  // Proportional share of actual pool balance (consistent with refund)
+                  // Use proportional pool balance — matches refund amount
                   const remaining = totalDeposits > 0 ? Math.round((g.deposited / totalDeposits) * poolBalance) : 0
                   return { ...g, remaining }
                 })
