@@ -280,7 +280,7 @@ export function TripDashboardPage() {
               return [...groupMap.values()]
                 .filter(g => g.deposited > 0)
                 .map(g => {
-                  const remaining = g.deposited - g.spent
+                  const remaining = totalDeposits > 0 ? Math.round((g.deposited / totalDeposits) * poolBalance) : 0
                   return { ...g, remaining }
                 })
                 .sort((a, b) => b.remaining - a.remaining)

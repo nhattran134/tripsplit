@@ -229,29 +229,21 @@ export function SettleUpPage() {
 
   const depositorRefunds = useMemo(() => {
     if (poolSurplus <= 0.01) return []
+    const totalDeposits = deposits.filter(d => !d.deleted_at).reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+    if (totalDeposits === 0) return []
 
-    // Per-depositor refund = their deposits - their pool expense shares - their via_pool payments
-    const refunds: { member: typeof members[0] | undefined; refund: number }[] = []
-    
-    const depositorIds = new Set(deposits.filter(d => !d.deleted_at).map(d => d.member_id))
-    
-    for (const memberId of depositorIds) {
-      const memberDeposits = deposits.filter(d => !d.deleted_at && d.member_id === memberId)
-        .reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
-      const memberPoolShares = expenseSplits
-        .filter(s => s.member_id === memberId && expenses.find(e => e.id === s.expense_id && !e.deleted_at && e.paid_from === 'pool'))
-        .reduce((sum, s) => sum + (Number(s.share_amount) || 0), 0)
-      const memberViaPool = settlements.filter(s => !s.deleted_at && s.method === 'via_pool' && s.from_member_id === memberId)
-        .reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
-      
-      const refund = memberDeposits - memberPoolShares - memberViaPool
-      if (refund > 0.01) {
-        refunds.push({ member: members.find(m => m.id === memberId), refund: Math.round(refund) })
-      }
+    const depositorTotals = new Map<string, number>()
+    for (const d of deposits) {
+      if (d.deleted_at) continue
+      depositorTotals.set(d.member_id, (depositorTotals.get(d.member_id) || 0) + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1))
     }
-    
-    return refunds
-  }, [poolSurplus, deposits, expenses, expenseSplits, settlements, members])
+
+    return [...depositorTotals.entries()].map(([memberId, deposited]) => {
+      const member = members.find(m => m.id === memberId)
+      const refund = Math.round((deposited / totalDeposits) * poolSurplus)
+      return { member, refund }
+    }).filter(r => r.refund > 0.01)
+  }, [poolSurplus, deposits, members])
 
   return (
     <div className="space-y-4">
