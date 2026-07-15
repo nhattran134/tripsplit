@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
@@ -95,30 +95,8 @@ export function MembersPage() {
   })
 
   // Compute group-level balances
-  const groupBalances = useMemo(() => {
-    const map = new Map<string, { groupName: string; members: string[]; net: number }>()
-    for (const stat of memberStats) {
-      const groupKey = stat.member.group_id || `solo_${stat.member.id}`
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.members.push(stat.member.name)
-        existing.net += stat.net
-      } else {
-        // Find group name
-        const groupName = stat.member.group_id
-          ? (members.find(m => m.group_id === stat.member.group_id)?.name || groupKey)
-          : stat.member.name
-        map.set(groupKey, { groupName, members: [stat.member.name], net: stat.net })
-      }
-    }
-    return map
-  }, [memberStats, members])
 
   // Pool surplus: total deposits - total pool expenses
-  const totalDeposits = deposits.reduce((sum, d) => sum + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
-  const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((sum, e) => sum + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
-  const viaPoolSettled = settlements.filter(s => !s.deleted_at && s.method === 'via_pool').reduce((sum, s) => sum + (Number(s.amount) || 0), 0)
-  const poolSurplus = totalDeposits - totalPoolExpenses - viaPoolSettled
 
   const addMemberMutation = useMutation({
     mutationFn: async () => {
@@ -242,47 +220,6 @@ export function MembersPage() {
               {addMemberMutation.isPending ? t('members.adding') : t('members.add')}
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Pool Surplus */}
-      {poolSurplus > 0.01 && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl p-3 mb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-amber-800 dark:text-amber-200">💰 {t('members.poolSurplus')}</p>
-              <p className="text-xs text-amber-600 dark:text-amber-400">{t('members.poolSurplusHint')}</p>
-            </div>
-            <span className="font-bold text-amber-700 dark:text-amber-300">{formatCurrency(poolSurplus, baseCurrency)}</span>
-          </div>
-          {/* Show who deposited (gets refund) */}
-          <div className="mt-2 flex flex-wrap gap-1">
-            {memberStats.filter(s => s.totalDeposited > 0).map(s => (
-              <span key={s.member.id} className="text-xs bg-amber-100 dark:bg-amber-800 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-full">
-                {s.member.name}: {formatCurrency(s.totalDeposited, baseCurrency)}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Group Balances */}
-      {groupBalances.size > 0 && [...groupBalances.values()].some(g => g.members.length > 1) && (
-        <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700 rounded-xl p-3 mb-3">
-          <p className="text-sm font-medium text-indigo-800 dark:text-indigo-200 mb-2">👥 {t('members.groupBalances')}</p>
-          <div className="space-y-1.5">
-            {[...groupBalances.entries()].filter(([, g]) => g.members.length > 1).map(([key, g]) => (
-              <div key={key} className="flex items-center justify-between text-sm">
-                <span className="text-indigo-700 dark:text-indigo-300">
-                  {g.members.join(' + ')}
-                </span>
-                <span className={`font-semibold ${Math.round(g.net) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {Math.round(g.net) >= 0 ? '+' : ''}{formatCurrency(Math.round(g.net * 100) / 100, baseCurrency)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <p className="text-[10px] text-indigo-500 dark:text-indigo-400 mt-1.5">{t('members.groupBalancesHint')}</p>
         </div>
       )}
 
