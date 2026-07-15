@@ -446,8 +446,13 @@ export function SettleUpPage() {
                       ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
                       : [transfer.from]
                     const debtorDeposits = fromMembers.reduce((s, m) => s + deposits.filter(d => d.member_id === m.id).reduce((ds, d) => ds + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0), 0)
-                    const debtorPoolShares = fromMembers.reduce((s, m) => s + expenseSplits.filter(sp => sp.member_id === m.id && expenses.find(e => e.id === sp.expense_id && e.paid_from === 'pool')).reduce((ss, sp) => ss + (Number(sp.share_amount) || 0), 0), 0)
-                    const debtorPoolCredit = debtorDeposits - debtorPoolShares
+                    const debtorViaPool = fromMembers.reduce((s, m) => s + settlements.filter(st => !st.deleted_at && st.method === 'via_pool' && st.from_member_id === m.id).reduce((ss, st) => ss + (Number(st.amount) || 0), 0), 0)
+                    // Pool credit = what group deposited - their pool expense shares - already used via_pool
+                    // Also account for proportional share of pool expenses funded for non-depositors
+                    const totalDep = deposits.filter(d => !d.deleted_at).reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+                    const totalPoolExp = expenses.filter(e => !e.deleted_at && e.paid_from === 'pool').reduce((s, e) => s + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+                    const proportionalPoolExp = totalDep > 0 ? (debtorDeposits / totalDep) * totalPoolExp : 0
+                    const debtorPoolCredit = Math.max(0, Math.round(debtorDeposits - proportionalPoolExp - debtorViaPool))
                     const canUsePool = debtorPoolCredit > 0
 
                     return (
