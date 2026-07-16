@@ -69,6 +69,13 @@ export function AddDepositPage() {
 
       const numRate = parseFloat(rateToBase) || 1
       const targetMember = depositFor || memberId
+      
+      // If depositing for someone else, include payer info in note
+      const myMember = members.find(m => m.auth_uid === currentAuthUid)
+      let depositNote = note.trim()
+      if (targetMember !== myMember?.id && myMember) {
+        depositNote = depositNote ? `${depositNote} (by ${myMember.name})` : `by ${myMember.name}`
+      }
 
       const { error } = await supabase.from('deposits').insert({
         id: generateId(),
@@ -77,7 +84,7 @@ export function AddDepositPage() {
         amount: numAmount,
         currency: currency || trip?.base_currency || 'VND',
         rate_to_base: numRate,
-        note: note.trim(),
+        note: depositNote,
       })
       if (error) throw new Error(error.message)
     },
