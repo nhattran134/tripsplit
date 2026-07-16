@@ -84,6 +84,7 @@
     "noPoolHint": "Trả từ tiền cá nhân (chưa có quỹ chung)",
     "poolAdminOnly": "Chỉ quản trị viên hoặc người giữ quỹ mới được chi từ quỹ",
     "exceedsPool": "Vượt quỹ {{amount}} — cần nạp thêm",
+    "exceedsPoolBlock": "Quỹ không đủ (còn {{remaining}}). Dùng tiền túi hoặc nạp thêm.",
     "receipt": "Hóa đơn (tùy chọn)",
     "split": "Chia",
     "equal": "Đều",

@@ -84,6 +84,7 @@
     "noPoolHint": "Paying from personal money (no pool deposits yet)",
     "poolAdminOnly": "Only admin or budget holder can pay from pool",
     "exceedsPool": "Exceeds pool by {{amount}} — someone will need to top up",
+    "exceedsPoolBlock": "Not enough in pool ({{remaining}} remaining). Use pocket or add deposit first.",
     "receipt": "Receipt (optional)",
     "split": "Split",
     "equal": "Equal",

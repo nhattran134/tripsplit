@@ -181,6 +181,11 @@ export function AddExpensePage() {
       const numAmount = parseFloat(amount)
       if (!numAmount || numAmount <= 0) throw new Error('Enter a valid amount')
       if (!paidBy && paidFrom === 'pocket') throw new Error('Select who paid')
+      // Block pool expenses that exceed available balance
+      if (paidFrom === 'pool') {
+        const expenseInBase = numAmount * (parseFloat(rateToBase) || 1)
+        if (expenseInBase > poolRemaining) throw new Error('Pool balance insufficient')
+      }
       // For pool expenses, use current user as record-keeper (not first member in array)
       const myMember = members.find(m => m.auth_uid === currentAuthUid)
       const actualPayer = paidBy || myMember?.id || members[0]?.id
@@ -484,10 +489,10 @@ export function AddExpensePage() {
       </div>
       )}
 
-      {/* Pool overage warning */}
-      {paidFrom === 'pool' && amount && parseFloat(amount) * (parseFloat(rateToBase) || 1) > poolRemaining && poolRemaining >= 0 && (
-        <div className="px-3 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-xs text-amber-700 dark:text-amber-300">
-          ⚠️ {t('expense.exceedsPool', { amount: formatCurrency(parseFloat(amount) * (parseFloat(rateToBase) || 1) - poolRemaining, trip?.base_currency || 'VND') })}
+      {/* Pool overage block */}
+      {paidFrom === 'pool' && amount && parseFloat(amount) * (parseFloat(rateToBase) || 1) > poolRemaining && (
+        <div className="px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-xs text-red-700 dark:text-red-300">
+          🚫 {t('expense.exceedsPoolBlock', { remaining: formatCurrency(Math.max(0, poolRemaining), trip?.base_currency || 'VND') })}
         </div>
       )}
 
