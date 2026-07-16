@@ -162,6 +162,59 @@ export function SettleUpPage() {
         net: Math.round(net * 100) / 100,
       }))
 
+      // Pool overdraft: when a group uses more pool than their credit,
+      // the excess is a debt to the other depositor groups.
+      const totalDep = deposits.filter(d => !d.deleted_at).reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+      const totalPoolExp = expenses.filter(e => !e.deleted_at && e.paid_from === 'pool').reduce((s, e) => s + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
+
+      if (totalDep > 0 && totalPoolExp > 0) {
+        // Per-depositor pool share remaining
+        const depositorRemaining = new Map<string, number>()
+        for (const d of deposits) {
+          if (d.deleted_at) continue
+          depositorRemaining.set(d.member_id, (depositorRemaining.get(d.member_id) || 0) + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1))
+        }
+        // Subtract proportional pool expenses
+        for (const [id, dep] of depositorRemaining) {
+          depositorRemaining.set(id, dep - (dep / totalDep) * totalPoolExp)
+        }
+        // Subtract via_pool from settler's group depositor
+        for (const s of settlements) {
+          if (s.deleted_at || s.method !== 'via_pool') continue
+          const settler = members.find(m => m.id === s.from_member_id)
+          if (!settler) continue
+          let targetDep: string | null = null
+          if (settler.group_id) {
+            for (const [depId] of depositorRemaining) {
+              const dm = members.find(m => m.id === depId)
+              if (dm?.group_id === settler.group_id) { targetDep = depId; break }
+            }
+          }
+          if (!targetDep && depositorRemaining.has(s.from_member_id)) targetDep = s.from_member_id
+          if (targetDep) {
+            depositorRemaining.set(targetDep, (depositorRemaining.get(targetDep) || 0) - (Number(s.amount) || 0))
+          }
+        }
+
+        // If any depositor is negative, add that as debt in pocket balances
+        // (they used more pool than they funded → owe the positive depositors)
+        const negatives = [...depositorRemaining.entries()].filter(([, v]) => v < -0.01)
+        const positives = [...depositorRemaining.entries()].filter(([, v]) => v > 0.01)
+        const positiveTotal = positives.reduce((s, [, v]) => s + v, 0)
+
+        for (const [negId, negAmount] of negatives) {
+          const entry = pocketEntries.find(e => e.memberId === negId)
+          if (entry) entry.net += negAmount // makes more negative (they owe)
+          
+          // Credit positive depositors proportionally
+          for (const [posId, posAmount] of positives) {
+            const credit = Math.abs(negAmount) * (posAmount / positiveTotal)
+            const posEntry = pocketEntries.find(e => e.memberId === posId)
+            if (posEntry) posEntry.net += credit
+          }
+        }
+      }
+
       return simplifyDebts(pocketEntries, members)
     },
     [members, expenses, expenseSplits, settlements]
