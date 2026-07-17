@@ -495,26 +495,22 @@ export function SettleUpPage() {
                   </button>
                   {(() => {
                     // Debtor's pool credit = their deposits - their pool expense shares
-                    // Via Pool: only available if the FROM member themselves deposited
-                    // Group members who didn't deposit can't use the depositor's pool credit
-                    const fromMemberDeposits = deposits.filter(d => d.member_id === transfer.from.id)
-                      .reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
+                    // Via Pool: available if the FROM member's GROUP has pool credit
+                    // (any group member can use the group depositor's credit)
+                    const fromMembers = transfer.from.group_id
+                      ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
+                      : [transfer.from]
+                    const groupDeposits = fromMembers.reduce((s, m) => s + deposits.filter(d => d.member_id === m.id).reduce((ds, d) => ds + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0), 0)
                     
                     let canUsePool = false
                     let debtorPoolCredit = 0
                     
-                    if (fromMemberDeposits > 0) {
-                      const fromMemberViaPool = settlements.filter(st => !st.deleted_at && st.method === 'via_pool' && st.from_member_id === transfer.from.id)
-                        .reduce((s, st) => s + (Number(st.amount) || 0), 0)
-                      // Also count group members' via_pool that uses this depositor's credit
-                      const groupViaPool = transfer.from.group_id
-                        ? members.filter(m => m.group_id === transfer.from.group_id && !m.deleted_at)
-                            .reduce((s, m) => s + settlements.filter(st => !st.deleted_at && st.method === 'via_pool' && st.from_member_id === m.id).reduce((ss, st) => ss + (Number(st.amount) || 0), 0), 0)
-                        : fromMemberViaPool
+                    if (groupDeposits > 0) {
+                      const groupViaPool = fromMembers.reduce((s, m) => s + settlements.filter(st => !st.deleted_at && st.method === 'via_pool' && st.from_member_id === m.id).reduce((ss, st) => ss + (Number(st.amount) || 0), 0), 0)
                       const totalDep = deposits.filter(d => !d.deleted_at).reduce((s, d) => s + (Number(d.amount) || 0) * (Number(d.rate_to_base) || 1), 0)
                       const totalPoolExp = expenses.filter(e => !e.deleted_at && e.paid_from === 'pool').reduce((s, e) => s + (Number(e.amount) || 0) * (Number(e.rate_to_base) || 1), 0)
-                      const proportionalPoolExp = totalDep > 0 ? (fromMemberDeposits / totalDep) * totalPoolExp : 0
-                      debtorPoolCredit = Math.max(0, Math.round(fromMemberDeposits - proportionalPoolExp - groupViaPool))
+                      const proportionalPoolExp = totalDep > 0 ? (groupDeposits / totalDep) * totalPoolExp : 0
+                      debtorPoolCredit = Math.max(0, Math.round(groupDeposits - proportionalPoolExp - groupViaPool))
                       canUsePool = debtorPoolCredit > 0
                     }
 
