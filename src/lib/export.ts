@@ -65,6 +65,62 @@ export function exportCSV(data: ExportData): void {
     const name = memberMap.get(b.memberId) || '?'
     lines.push(`${name},${b.net.toFixed(getCurrencyDecimals(baseCurrency))}`)
   }
+  lines.push('')
+
+  // Final Calculations
+  const totalDeposits = deposits.reduce((s, d) => s + Number(d.amount) * Number(d.rate_to_base), 0)
+  const totalExpenses = expenses.reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+  const totalPoolExpenses = expenses.filter(e => e.paid_from === 'pool').reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+  const totalPocketExpenses = expenses.filter(e => e.paid_from === 'pocket').reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+  const viaPoolSettlements = settlements.filter(s => s.method === 'via_pool').reduce((s, st) => s + Number(st.amount), 0)
+  const poolBalance = totalDeposits - totalPoolExpenses - viaPoolSettlements
+  const decimals = getCurrencyDecimals(baseCurrency)
+
+  lines.push('--- FINAL CALCULATIONS ---')
+  lines.push(`Total Deposited,${totalDeposits.toFixed(decimals)}`)
+  lines.push(`Total Expenses,${totalExpenses.toFixed(decimals)}`)
+  lines.push(`  Pool Expenses,${totalPoolExpenses.toFixed(decimals)}`)
+  lines.push(`  Pocket Expenses,${totalPocketExpenses.toFixed(decimals)}`)
+  lines.push(`Via Pool Settlements,${viaPoolSettlements.toFixed(decimals)}`)
+  lines.push(`Pool Balance (Remaining),${poolBalance.toFixed(decimals)}`)
+  lines.push('')
+
+  // Per-member share of expenses
+  lines.push('--- PER MEMBER SHARE ---')
+  lines.push('Member,Deposited,Expense Share,Pocket Paid,Net')
+  for (const m of members) {
+    const deposited = deposits.filter(d => d.member_id === m.id).reduce((s, d) => s + Number(d.amount) * Number(d.rate_to_base), 0)
+    const share = expenseSplits.filter(s => s.member_id === m.id).reduce((s, sp) => s + Number(sp.share_amount), 0)
+    const pocketPaid = expenses.filter(e => e.paid_from === 'pocket' && e.member_id === m.id).reduce((s, e) => s + Number(e.amount) * Number(e.rate_to_base), 0)
+    const balance = balances.find(b => b.memberId === m.id)
+    lines.push(`${m.name},${deposited.toFixed(decimals)},${share.toFixed(decimals)},${pocketPaid.toFixed(decimals)},${(balance?.net ?? 0).toFixed(decimals)}`)
+  }
+  lines.push('')
+
+  // Refunds (pool surplus per depositor)
+  if (poolBalance > 0) {
+    lines.push('--- POOL REFUND ---')
+    lines.push('Member,Refund Amount')
+    const depositorTotals = new Map<string, number>()
+    for (const d of deposits) {
+      depositorTotals.set(d.member_id, (depositorTotals.get(d.member_id) || 0) + Number(d.amount) * Number(d.rate_to_base))
+    }
+    for (const [memberId, deposited] of depositorTotals) {
+      const refund = (deposited / totalDeposits) * poolBalance
+      lines.push(`${memberMap.get(memberId) || '?'},${refund.toFixed(decimals)}`)
+    }
+    lines.push('')
+  }
+
+  // Outstanding transfers
+  if (data.transfers.length > 0) {
+    lines.push('--- OUTSTANDING SETTLEMENTS ---')
+    lines.push('From,To,Amount')
+    for (const t of data.transfers) {
+      lines.push(`${t.from.name},${t.to.name},${t.amount.toFixed(decimals)}`)
+    }
+    lines.push('')
+  }
 
   const csv = lines.join('\n')
   downloadFile(csv, `${tripName.replace(/\s+/g, '_')}_export.csv`, 'text/csv')
